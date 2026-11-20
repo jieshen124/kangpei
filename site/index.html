@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>C202611131496488 · 站点已就绪</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <div class="badge"><span class="dot"></span>STATIC SITE · ONLINE</div>
+    <h1>服务器已就绪</h1>
+    <p class="sub">nginx 静态站点已上线，这台机器现在可以对外提供网页服务。</p>
+  </header>
+
+  <section class="grid">
+    <div class="card">
+      <div class="label">主机名</div>
+      <div class="value">C202611131496488</div>
+    </div>
+    <div class="card">
+      <div class="label">操作系统</div>
+      <div class="value">Ubuntu 24.04.1 LTS</div>
+    </div>
+    <div class="card">
+      <div class="label">内核</div>
+      <div class="value mono">6.8.0-149-generic</div>
+    </div>
+    <div class="card">
+      <div class="label">系统盘</div>
+      <div class="value">28.89 GB · 已用 11.5%</div>
+    </div>
+    <div class="card">
+      <div class="label">内网地址</div>
+      <div class="value mono">172.16.0.48</div>
+    </div>
+    <div class="card">
+      <div class="label">SSH 入口</div>
+      <div class="value mono">103.236.73.76:40851</div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>下一步</h2>
+    <ol>
+      <li><b>换页面</b>：把 <code>/var/www/site/index.html</code> 替换成你自己的内容，或把整个 <code>/var/www/site/</code> 目录换成你的构建产物。</li>
+      <li><b>确认生效</b>：静态文件改完无需重启，刷新浏览器即可；只有改 nginx 配置才需要 <code>sudo nginx -t &amp;&amp; sudo systemctl reload nginx</code>。</li>
+      <li><b>绑域名</b>：把这个域名解析到公网入口后，再在配置里加 <code>server_name</code>，外加 HTTPS 证书（Let's Encrypt 或自签）。</li>
+    </ol>
+  </section>
+
+  <section class="panel muted">
+    <h2>当前配置</h2>
+    <pre><code>root  /var/www/site
+index index.html
+listen 80
+gzip  on
+try_files $uri $uri/ =404</code></pre>
+    <p class="note">这是一张占位页面。确认访问正常后，直接覆盖 <code>index.html</code> 就行，配置不用动。</p>
+  </section>
+
+  <footer>
+    <span>static site · nginx</span>
+    <span id="ts" class="mono"></span>
+  </footer>
+
+</div>
+<script>
+  document.getElementById('ts').textContent =
+    'rendered ' + new Date().toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
+</script>
+</body>
+</html>

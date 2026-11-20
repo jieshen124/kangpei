@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>404 · 页面不存在</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <div class="badge"><span class="dot"></span>404 NOT FOUND</div>
+    <h1>这里没有页面</h1>
+    <p class="sub">请求的路径不存在，或者文件还没上传上去。</p>
+  </header>
+  <section class="panel">
+    <h2>排查顺序</h2>
+    <ol>
+      <li>确认文件在 <code>/var/www/site/</code> 下，大小写和斜杠要和 URL 一致。</li>
+      <li>确认站点根目录配置指向 <code>/var/www/site</code>。</li>
+      <li>看 nginx 错误日志：<code>sudo tail -20 /var/log/nginx/error.log</code></li>
+    </ol>
+  </section>
+  <footer><span>static site · nginx</span><span><a href="/" style="color:#34d3bf">回到首页</a></span></footer>
+</div>
+</body>
+</html>

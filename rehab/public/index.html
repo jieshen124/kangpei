@@ -1,0 +1,2633 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f4f7f6">
+<title>康陪 · 康复监督预约</title>
+<style>
+  :root{
+    --bg:#f3f6f5;
+    --panel:#ffffff;
+    --panel2:#f7faf9;
+    --line:#e6ecea;
+    --line-2:#dde6e3;
+    --text:#12211f;
+    --text-2:#3b4c48;
+    --dim:#7b8b88;
+    --dim-2:#98a6a2;
+    --brand:#0e9f8e;
+    --brand-2:#0b8477;
+    --brand-soft:#e7f6f2;
+    --brand-ink:#ffffff;
+    --warn:#c07d18;
+    --warn-soft:#fdf3e2;
+    --danger:#d9564f;
+    --danger-soft:#fdeeed;
+    --blue:#2f6fed;
+    --blue-soft:#edf3fe;
+    --shadow-sm:0 1px 2px rgba(16,40,36,.04);
+    --shadow:0 2px 4px rgba(16,40,36,.04),0 16px 40px -20px rgba(16,40,36,.28);
+    --r:18px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;min-height:100%;overflow-x:hidden}
+  body{
+    color:var(--text);
+    font-size:15px;
+    line-height:1.62;
+    -webkit-font-smoothing:antialiased;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    background:
+      radial-gradient(1100px 520px at 108% -8%, #dcf1eb 0%, rgba(220,241,235,0) 62%),
+      radial-gradient(900px 480px at -12% 2%, #e6effc 0%, rgba(230,239,252,0) 55%),
+      var(--bg);
+    background-attachment:fixed;
+  }
+  .hidden{display:none!important}
+  .dev-hide{display:none!important}
+  :focus-visible{outline:2px solid rgba(14,159,142,.35);outline-offset:2px}
+
+  .wrap{width:100%;max-width:600px;margin:0 auto;padding:10px 16px calc(32px + env(safe-area-inset-bottom))}
+
+  /* ---------- 登录 ---------- */
+  .login{
+    min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:20px;
+    background:linear-gradient(165deg,#0f9486 0%,#0a7166 48%,#07443d 100%);
+    position:relative;overflow:hidden;
+  }
+  .login::before{
+    content:"";position:absolute;width:520px;height:520px;border-radius:50%;
+    top:-200px;right:-180px;
+    background:radial-gradient(circle,rgba(255,255,255,.16),rgba(255,255,255,0) 70%);
+  }
+  .login::after{
+    content:"";position:absolute;width:420px;height:420px;border-radius:50%;
+    bottom:-180px;left:-140px;
+    background:radial-gradient(circle,rgba(255,255,255,.10),rgba(255,255,255,0) 70%);
+  }
+  .card{
+    position:relative;z-index:1;box-sizing:border-box;
+    background:#fff;border-radius:24px;padding:26px 24px 22px;
+    width:100%;max-width:392px;
+    box-shadow:0 30px 70px -24px rgba(3,32,28,.55),0 2px 6px rgba(3,32,28,.08);
+  }
+  .logo{
+    width:56px;height:56px;border-radius:18px;display:grid;place-items:center;font-size:27px;
+    background:linear-gradient(150deg,#12b3a0,#0b7f73);
+    box-shadow:0 10px 24px -10px rgba(11,127,115,.9);
+    margin-bottom:16px;
+  }
+  h1{font-size:27px;margin:0 0 6px;letter-spacing:-.03em;font-weight:800}
+  .sub{color:var(--dim);font-size:12.5px;margin:0 0 20px;line-height:1.7}
+  .roles{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:16px}
+  .role-btn{
+    padding:12px 10px;border-radius:14px;cursor:pointer;
+    background:#f6faf9;color:var(--text-2);border:1px solid #e8efed;
+    font-family:inherit;font-size:13.5px;font-weight:600;line-height:1.3;
+    text-align:center;transition:.18s;
+  }
+  .role-btn .ri{display:flex;justify-content:center;color:var(--brand-2);margin-bottom:6px}
+  .role-btn.active .ri{color:var(--brand-2)}
+  .role-btn small{display:block;font-size:10.5px;color:var(--dim);font-weight:400;margin-top:3px}
+  .role-btn.active{
+    border-color:rgba(14,159,142,.55);color:var(--brand-2);
+    background:var(--brand-soft);
+    box-shadow:0 0 0 3px rgba(14,159,142,.08);
+  }
+  .role-btn.active small{color:var(--brand-2)}
+  .field{
+    width:100%;padding:12px 14px;margin-bottom:10px;
+    background:#f8faf9;border:1px solid #e4ebe9;border-radius:13px;
+    color:var(--text);font-size:15px;font-family:inherit;outline:none;
+    transition:.16s;
+  }
+  .field:focus{background:#fff;border-color:rgba(14,159,142,.6);box-shadow:0 0 0 3px rgba(14,159,142,.09)}
+  .btn{
+    width:100%;padding:13px 0;border:0;border-radius:13px;
+    background:linear-gradient(180deg,#12a897,#0b8b7c);color:#fff;
+    font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;
+    box-shadow:0 10px 22px -12px rgba(11,139,124,.85);
+    transition:.16s;
+  }
+  .btn:active{transform:translateY(1px);box-shadow:0 6px 14px -12px rgba(11,139,124,.8)}
+  .btn:disabled{opacity:.5;box-shadow:none}
+  .btn.ghost{
+    background:#fff;border:1px solid var(--line-2);color:var(--text);
+    font-weight:600;box-shadow:var(--shadow-sm);
+  }
+  .btn.danger{background:#fff;border:1px solid rgba(217,86,79,.4);color:var(--danger);font-weight:600;box-shadow:none}
+  .btn.sm{padding:10px 0;font-size:13.5px;border-radius:11px}
+  .err{color:var(--danger);font-size:12.5px;min-height:16px;margin:8px 0 0}
+
+  /* ---------- 顶栏 ---------- */
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:11px 13px;position:sticky;top:8px;z-index:20;
+    background:rgba(255,255,255,.92);
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    border:1px solid var(--line);border-radius:16px;
+    box-shadow:0 6px 18px -12px rgba(16,40,36,.35);
+    margin-bottom:12px;
+  }
+  .who{display:flex;align-items:center;gap:11px}
+  .avatar{
+    width:42px;height:42px;border-radius:14px;display:grid;place-items:center;
+    background:linear-gradient(150deg,#13ac9a,#0a7d72);color:#fff;
+    font-weight:700;font-size:16px;
+    box-shadow:0 8px 18px -10px rgba(11,127,115,.9);
+  }
+  .who .name{font-size:16px;font-weight:700;letter-spacing:-.01em}
+  .who .role{font-size:11.5px;color:var(--dim);margin-top:1px}
+  .logout{
+    background:#fff;border:1px solid var(--line-2);color:var(--dim);
+    padding:8px 13px;border-radius:11px;font-size:12.5px;font-family:inherit;
+    cursor:pointer;box-shadow:var(--shadow-sm);
+  }
+
+
+  /* ---------- 顶部概览 ---------- */
+  .hero{
+    position:relative;overflow:hidden;
+    background:linear-gradient(135deg,#12a897 0%,#0a8073 55%,#075f56 100%);
+    border-radius:20px;padding:16px 18px 15px;margin-bottom:12px;color:#fff;
+    box-shadow:0 18px 36px -24px rgba(9,110,100,.95);
+  }
+  .hero::after{
+    content:"";position:absolute;width:190px;height:190px;border-radius:50%;
+    right:-70px;top:-90px;background:radial-gradient(circle,rgba(255,255,255,.22),rgba(255,255,255,0) 70%);
+  }
+  .hero-top{display:flex;justify-content:space-between;align-items:center;font-size:12px;opacity:.92;position:relative;z-index:1}
+  .hero-metrics{display:flex;gap:8px;margin-top:14px;position:relative;z-index:1}
+  .metric{flex:1;min-width:0}
+  .metric .v{font-size:21px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1.2}
+  .metric .k{font-size:10.5px;opacity:.78;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .hero-state{
+    font-size:11px;padding:3px 9px;border-radius:999px;
+    background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);
+  }
+  /* ---------- 卡片 ---------- */
+  .block{
+    background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+    padding:17px;margin-bottom:12px;box-shadow:var(--shadow);
+  }
+  .block-title{
+    font-size:12.5px;color:var(--dim);margin:0 0 13px;
+    display:flex;justify-content:space-between;align-items:center;gap:10px;
+  }
+  .block-title b{color:var(--text);font-size:16px;font-weight:700;letter-spacing:-.015em;display:flex;align-items:center;gap:8px}
+  .block-title b::before{content:"";width:3px;height:15px;border-radius:2px;background:linear-gradient(180deg,#12b3a0,#0b7f73);flex-shrink:0}
+  .block-title span{flex-shrink:0}
+  .kv{display:flex;justify-content:space-between;font-size:13px;padding:7px 0;gap:10px;border-bottom:1px dashed #f0f4f3}
+  .kv:last-child{border-bottom:0}
+  .kv span:first-child{color:var(--dim);flex-shrink:0}
+  .kv span:last-child{text-align:right;color:var(--text-2)}
+  .pill{
+    display:inline-flex;align-items:center;gap:6px;font-size:11.5px;
+    padding:4px 10px;border-radius:999px;
+    background:#f2f7f5;border:1px solid var(--line);color:var(--dim);font-weight:500;
+  }
+  .pill.on{color:var(--brand-2);border-color:rgba(14,159,142,.38);background:var(--brand-soft)}
+  .dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+
+  /* ---------- 分段标签 ---------- */
+  .tabs{
+    display:flex;gap:4px;background:#e9f0ee;padding:5px;border-radius:15px;margin-bottom:13px;
+    box-shadow:inset 0 1px 2px rgba(16,40,36,.05);
+  }
+  .tab{
+    flex:1 1 0;min-width:0;border:0;background:transparent;color:#63756f;
+    padding:9px 2px;border-radius:11px;font-size:13px;font-family:inherit;
+    cursor:pointer;transition:.18s;font-weight:500;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .tab.active{
+    background:#fff;color:var(--text);font-weight:700;
+    box-shadow:0 2px 6px rgba(16,40,36,.1);
+  }
+
+  /* 分页视图 */
+  body[data-view] [data-pane]{display:none}
+  body[data-view="p-book"] [data-pane="p-book"],
+  body[data-view="p-records"] [data-pane="p-records"],
+  body[data-view="p-alerts"] [data-pane="p-alerts"],
+  body[data-view="p-profile"] [data-pane="p-profile"],
+  body[data-view="s-jobs"] [data-pane="s-jobs"],
+  body[data-view="s-tools"] [data-pane="s-tools"],
+  body[data-view="s-verify"] [data-pane="s-verify"],
+  body[data-view="s-plan"] [data-pane="s-plan"]{display:block}
+  body[data-view="s-flow"] [data-pane="s-flow"]{display:block}
+
+  /* ---------- 工具卡 ---------- */
+  .tool-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0 4px}
+  .tool-card{
+    background:#fff;border:1px solid #e8efed;border-radius:15px;padding:13px;
+    cursor:pointer;transition:.18s;box-shadow:var(--shadow-sm);
+  }
+  .tool-card:hover,.tool-card:active{
+    border-color:rgba(14,159,142,.5);background:var(--brand-soft);
+    transform:translateY(-1px);
+  }
+  .tool-card b{display:block;font-size:13.5px;margin-bottom:4px;font-weight:700}
+  .tool-card small{color:var(--dim);font-size:10.5px;line-height:1.5;display:block}
+  .tool-card .full{grid-column:1/-1}
+
+  /* ---------- 监督者卡 ---------- */
+  .sup-item{
+    border:1px solid #e8efed;border-radius:15px;padding:13px;margin-bottom:9px;
+    background:#fff;cursor:pointer;position:relative;transition:.18s;box-shadow:var(--shadow-sm);
+  }
+  .sup-item.sel{border-color:rgba(14,159,142,.55);background:var(--brand-soft);box-shadow:0 0 0 3px rgba(14,159,142,.07)}
+  .sup-item .h{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+  .sup-item .n{font-size:14.5px;font-weight:700}
+  .sup-item .m{font-size:12px;color:var(--dim)}
+  .sup-item .tag{font-size:10.5px;padding:2px 7px;border-radius:7px;border:1px solid var(--line-2);color:var(--dim);background:#fafcfb}
+  .sup-item .tag.ok{color:var(--brand-2);border-color:rgba(14,159,142,.4);background:var(--brand-soft)}
+  .sup-item .tag.no{color:var(--danger);border-color:rgba(217,86,79,.35);background:var(--danger-soft)}
+
+  /* ---------- 选项 ---------- */
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+  .chip{
+    padding:7px 13px;border-radius:999px;font-size:12.5px;
+    border:1px solid #e6eeec;background:#f5f9f8;color:#5f716d;
+    cursor:pointer;font-family:inherit;transition:.16s;
+  }
+  .chip.active{
+    border-color:rgba(14,159,142,.5);color:var(--brand-2);
+    background:var(--brand-soft);font-weight:600;
+  }
+
+  /* ---------- 状态 ---------- */
+  .badge{font-size:11.5px;padding:4px 11px;border-radius:999px;font-weight:600}
+  .b-pending{background:var(--warn-soft);color:var(--warn)}
+  .b-confirmed{background:var(--blue-soft);color:var(--blue)}
+  .b-checked_in{background:var(--brand-soft);color:var(--brand-2)}
+  .b-completed{background:#f1f5f4;color:#7b8b88}
+  .b-cancelled{background:var(--danger-soft);color:var(--danger)}
+
+  .booking{
+    border:1px solid #e8efed;border-radius:15px;padding:13px;margin-bottom:10px;
+    background:#fff;box-shadow:var(--shadow-sm);
+  }
+  .booking .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .booking .id{font-size:11.5px;color:var(--dim-2);font-family:ui-monospace,Menlo,monospace}
+  .actions{display:flex;gap:9px;margin-top:11px}
+  .actions .btn{flex:1;padding:10px 0;font-size:13px;border-radius:11px}
+  .empty{
+    text-align:center;color:var(--dim);font-size:12.5px;padding:22px 14px;line-height:1.9;
+    background:#fafcfb;border:1px dashed #e4ecea;border-radius:14px;
+  }
+
+  .switch-line{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .toggle{position:relative;width:52px;height:30px;flex-shrink:0}
+  .toggle input{opacity:0;width:0;height:0}
+  .slider{
+    position:absolute;inset:0;background:#eef3f2;border:1px solid var(--line-2);
+    border-radius:999px;cursor:pointer;transition:.22s;
+  }
+  .slider::before{
+    content:"";position:absolute;width:22px;height:22px;border-radius:50%;left:3px;top:3px;
+    background:#fff;box-shadow:0 2px 5px rgba(16,40,36,.18);transition:.22s;
+  }
+  .toggle input:checked + .slider{background:linear-gradient(180deg,#12a897,#0b8b7c);border-color:transparent}
+  .toggle input:checked + .slider::before{transform:translateX(22px)}
+
+  /* ---------- 图表 ---------- */
+  .chart{width:100%;height:130px;display:block;margin:8px 0 2px}
+  .legend{display:flex;gap:16px;font-size:11px;color:var(--dim);margin-bottom:8px}
+  .lg{display:flex;align-items:center;gap:6px}
+  .sw{width:12px;height:3px;border-radius:2px}
+  .scale-row{
+    display:flex;justify-content:space-between;font-size:12px;padding:8px 0;
+    border-bottom:1px dashed #f0f4f3;color:var(--dim);
+  }
+  .scale-row .d{color:var(--text);font-family:ui-monospace,Menlo,monospace;font-size:11.5px;font-variant-numeric:tabular-nums}
+
+  /* ---------- 课程视频 ---------- */
+  .video-item{background:#f8fbfa;border:1px solid #e8efed;border-radius:15px;padding:10px;margin-bottom:10px}
+  .video-item video{width:100%;max-height:250px;border-radius:11px;background:#0b1a17;display:block}
+  .video-meta{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-top:9px}
+  .video-meta b{font-size:13px;display:block;margin-bottom:3px;font-weight:650}
+  .video-meta small{font-size:11px;color:var(--dim)}
+  .video-del{background:transparent;border:0;color:var(--danger);font-size:12px;cursor:pointer;flex-shrink:0;padding:2px 0}
+  .upload-box{border:1px dashed rgba(14,159,142,.35);border-radius:15px;padding:12px;margin-top:8px;background:#fafdfc}
+  .upload-box input[type=file]{font-size:12px;color:var(--dim);width:100%;margin-bottom:9px}
+  .prog-wrap{height:7px;background:#eaf1ef;border-radius:5px;overflow:hidden;margin:9px 0 5px}
+  .prog-bar{height:100%;width:0;background:linear-gradient(90deg,#12a897,#0b8b7c);transition:width .15s;border-radius:5px}
+  .prog-txt{font-size:11px;color:var(--dim)}
+  .video-ph{
+    height:130px;border-radius:11px;background:#eef4f3;
+    display:flex;align-items:center;justify-content:center;
+    font-size:12px;color:var(--dim);letter-spacing:.4px;
+  }
+  .video-ph.bad{color:var(--danger)}
+  .vw-chip{
+    font-size:11px;padding:3px 9px;border-radius:8px;
+    border:1px solid var(--line-2);color:var(--dim);white-space:nowrap;background:#fff;
+  }
+  .vw-chip.ok{border-color:rgba(14,159,142,.45);color:var(--brand-2);background:var(--brand-soft)}
+
+  /* ---------- 底部弹层 ---------- */
+  .mask{
+    position:fixed;inset:0;background:rgba(8,26,23,.45);
+    backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);
+    opacity:0;pointer-events:none;transition:.22s;z-index:40;
+  }
+  .mask.open{opacity:1;pointer-events:auto}
+  .sheet{
+    position:fixed;left:0;right:0;bottom:0;z-index:41;background:#fff;
+    border-top-left-radius:22px;border-top-right-radius:22px;
+    transform:translateY(102%);transition:transform .28s cubic-bezier(.32,.72,.24,1),box-shadow .2s;
+    max-height:90vh;display:flex;flex-direction:column;
+    box-shadow:none;
+  }
+  .sheet.open{transform:translateY(0);box-shadow:0 -18px 50px -24px rgba(8,26,23,.4)}
+  .sheet::before{
+    content:"";position:absolute;top:8px;left:50%;transform:translateX(-50%);
+    width:40px;height:4px;border-radius:2px;background:#e3ebe8;
+  }
+  .sheet-head{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:20px 18px 12px;border-bottom:1px solid #f0f4f3;flex-shrink:0;
+  }
+  .sheet-head b{font-size:16px;font-weight:700;letter-spacing:-.01em}
+  .sheet-close{
+    background:#f3f7f6;border:0;color:var(--dim);font-size:17px;cursor:pointer;
+    width:30px;height:30px;border-radius:50%;line-height:1;
+  }
+  .sheet-body{overflow-y:auto;padding:16px 18px calc(20px + env(safe-area-inset-bottom))}
+
+  .slider-row{margin-bottom:18px}
+  .slider-row .lab{display:flex;justify-content:space-between;font-size:13.5px;margin-bottom:8px;font-weight:500}
+  .slider-row .val{
+    color:var(--brand-2);font-weight:800;font-size:16px;
+    font-family:ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums;
+  }
+  input[type=range]{
+    width:100%;-webkit-appearance:none;height:5px;border-radius:4px;
+    background:#eaf1ef;outline:none;margin:2px 0;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:22px;height:22px;border-radius:50%;
+    background:linear-gradient(180deg,#12a897,#0b8b7c);cursor:pointer;
+    box-shadow:0 3px 8px -2px rgba(11,139,124,.6);
+  }
+  .note-input{
+    width:100%;min-height:70px;padding:12px 14px;
+    background:#f8faf9;border:1px solid #e4ebe9;border-radius:13px;
+    color:var(--text);font-family:inherit;font-size:14px;resize:vertical;outline:none;
+  }
+  .note-input:focus{background:#fff;border-color:rgba(14,159,142,.6);box-shadow:0 0 0 3px rgba(14,159,142,.09)}
+
+  .toast{
+    position:fixed;left:50%;bottom:28px;transform:translate(-50%,18px);
+    background:#0f2b26;color:#fff;border:0;padding:11px 18px;border-radius:13px;
+    font-size:13px;opacity:0;pointer-events:none;transition:.22s;z-index:60;
+    box-shadow:0 18px 40px -18px rgba(8,26,23,.7);max-width:80vw;text-align:center;
+  }
+  .toast.show{opacity:1;transform:translate(-50%,0)}
+  .disclaimer{font-size:11.5px;color:var(--dim-2);line-height:1.75;padding:0 2px}
+
+  @media (max-width:360px){
+    .tool-grid{grid-template-columns:1fr}
+    .roles{grid-template-columns:1fr 1fr}
+  }
+
+  /* ---------- 偏瘫陪练流程 ---------- */
+  .fv-rule{display:flex;gap:9px;font-size:12px;line-height:1.6;color:var(--text-2);padding:4px 0}
+  .fv-rule .n{flex:0 0 16px;height:16px;border-radius:50%;background:var(--brand-soft);color:var(--brand-2);
+    font-size:10.5px;font-weight:700;text-align:center;line-height:16px;margin-top:2px}
+  .fv-rule .t{flex:1 1 0;min-width:0}
+  .flow-card{border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px;background:var(--panel2)}
+  .flow-card .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+  .flow-card .head b{font-size:14px}
+
+  #flowView{position:fixed;inset:0;z-index:56;background:var(--bg);display:none;flex-direction:column}
+  #flowView.open{display:flex}
+  .fv-head{display:flex;align-items:center;gap:10px;padding:14px 16px 10px;background:rgba(255,255,255,.94);
+    backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+  .fv-back{width:34px;height:34px;flex:0 0 34px;border-radius:11px;border:1px solid var(--line);background:#fff;
+    color:var(--text-2);font-size:17px;line-height:1;cursor:pointer}
+  .fv-ht{flex:1;min-width:0}
+  .fv-ht b{display:block;font-size:15px;letter-spacing:-.2px}
+  .fv-ht span{display:block;font-size:11.5px;color:var(--dim);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .fv-timer{flex:0 0 auto;font-variant-numeric:tabular-nums;font-size:12.5px;font-weight:700;color:var(--brand-2);
+    background:var(--brand-soft);padding:5px 9px;border-radius:9px}
+
+  .fv-rail{display:flex;gap:7px;padding:12px 16px 2px}
+  .fv-node{flex:1 1 0;min-width:0;text-align:center;font-size:10px;color:var(--dim-2);line-height:1.3}
+  .fv-node i{display:block;height:4px;border-radius:2px;background:var(--line-2);margin-bottom:6px;transition:.2s}
+  .fv-node.done i{background:var(--brand)}
+  .fv-node.cur i{background:var(--brand-2);box-shadow:0 0 0 2px rgba(14,159,142,.16)}
+  .fv-node.cur{color:var(--brand-2);font-weight:700}
+
+  .fv-main{flex:1;overflow-y:auto;padding:8px 16px 108px;-webkit-overflow-scrolling:touch}
+  .fv-card{background:var(--panel);border-radius:var(--r);padding:16px;box-shadow:var(--shadow);border:1px solid #eef3f2}
+  .fv-tag{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;letter-spacing:.3px;
+    color:var(--brand-2);background:var(--brand-soft);padding:4px 9px;border-radius:999px}
+  .fv-title{font-size:20px;font-weight:800;margin:11px 0 5px;letter-spacing:-.4px;line-height:1.3}
+  .fv-goal{font-size:12.5px;color:var(--dim);line-height:1.7;margin-bottom:4px}
+  .fv-sec{margin-top:16px}
+  .fv-sec h4{font-size:11px;letter-spacing:.8px;color:var(--dim-2);font-weight:700;margin:0 0 7px}
+  .fv-item{display:flex;gap:9px;font-size:13px;line-height:1.65;color:var(--text-2);padding:5px 0}
+  .fv-item i{flex:0 0 16px;height:16px;border-radius:50%;font-style:normal;font-size:10.5px;
+    text-align:center;line-height:16px;margin-top:2px}
+  .fv-item.ok i{background:var(--brand-soft);color:var(--brand-2)}
+  .fv-item.no i{background:var(--danger-soft);color:var(--danger)}
+  .fv-item.no{color:#93423c}
+  .fv-stopbox{background:var(--danger-soft);border:1px solid rgba(217,86,79,.18);border-radius:12px;padding:11px 12px;margin-top:14px}
+  .fv-stopbox h4{color:#a83f38;font-size:11px;letter-spacing:.8px;font-weight:700;margin:0 0 6px}
+  .fv-stopbox p{font-size:12.5px;color:#8e3b36;line-height:1.6;margin:3px 0}
+  .fv-abort{display:block;width:100%;margin-top:14px;padding:9px;border-radius:11px;border:1px dashed rgba(217,86,79,.4);
+    background:#fff;color:var(--danger);font-size:12px;cursor:pointer}
+  .fv-inc-note{margin-top:14px;font-size:12px;color:var(--dim);line-height:1.7}
+
+  .fv-foot{position:fixed;left:0;right:0;bottom:0;display:flex;gap:8px;padding:11px 16px calc(11px + env(safe-area-inset-bottom));
+    background:linear-gradient(180deg,rgba(243,246,245,0),rgba(243,246,245,.97) 45%)}
+  .fv-foot .btn{flex:1 1 0;min-width:0}
+
+  .fv-inc-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+  .fv-inc{border:1px solid var(--line);background:#fff;border-radius:12px;padding:10px;text-align:left;
+    font-size:12px;line-height:1.45;color:var(--text-2);cursor:pointer}
+  .fv-inc b{display:block;font-size:12.5px;color:var(--text);margin-bottom:3px;font-weight:700}
+  .fv-inc.high{border-color:rgba(217,86,79,.3)}
+  .fv-inc .tag120{display:inline-block;margin-top:5px;font-size:10px;font-weight:700;color:#a83f38;
+    background:var(--danger-soft);padding:2px 6px;border-radius:6px}
+  .fv-call{background:var(--danger);color:#fff;border-radius:12px;padding:10px 12px;font-size:12.5px;
+    font-weight:700;text-align:center;margin-top:12px;letter-spacing:.3px}
+  .fv-inp{width:100%;box-sizing:border-box;border:1px solid var(--line-2);border-radius:12px;padding:11px 12px;
+    font-size:13px;font-family:inherit;color:var(--text);background:#fff;resize:none}
+  .fv-inp:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 4px rgba(14,159,142,.1)}
+
+
+  /* ---------- 诊断报告列表 ---------- */
+  .rep{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--line);border-radius:13px;
+    background:var(--panel2);margin-bottom:8px}
+  .rep .ic{flex:0 0 38px;height:38px;border-radius:10px;background:#fff;border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:var(--brand-2);
+    letter-spacing:.4px}
+  .rep .mid{flex:1 1 0;min-width:0}
+  .rep .mid b{display:block;font-size:13px;font-weight:600;color:var(--text);overflow:hidden;
+    text-overflow:ellipsis;white-space:nowrap}
+  .rep .mid span{font-size:11px;color:var(--dim)}
+  .rep .ops{display:flex;gap:6px;flex:0 0 auto}
+  .rep .ops button{border:1px solid var(--line-2);background:#fff;border-radius:8px;padding:5px 8px;
+    font-size:11px;color:var(--text-2);cursor:pointer}
+  .rep .ops button.del{color:var(--danger);border-color:rgba(217,86,79,.3)}
+
+</style>
+</head>
+<body>
+
+<!-- 登录 -->
+<div id="loginView" class="login">
+  <div class="card" style="width:100%;max-width:380px">
+    <div class="logo"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l2.4-6 4.2 12 2.4-6h5"/></svg></div>
+    <h1>康陪</h1>
+    <p class="sub">线上预约监督者 · 线下陪伴康复训练 · 每日量表记录</p>
+    <div class="roles">
+      <button class="role-btn active" id="rolePatient" data-role="patient"><span class="ri"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c0-3.6 3.1-5.8 7-5.8s7 2.2 7 5.8"/></svg></span>患者<small>预约上门监督</small></button>
+      <button class="role-btn" id="roleFamily" data-role="family"><span class="ri"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="9" r="2.9"/><circle cx="17" cy="10.5" r="2.2"/><path d="M3 19.5c0-2.9 2.3-4.7 5-4.7s5 1.8 5 4.7"/><path d="M14.5 15.4c2.2-.3 3.9 1.2 3.9 3.4"/></svg></span>家属<small>查看 · 代约</small></button>
+      <button class="role-btn" id="roleSupervisor" data-role="supervisor"><span class="ri"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4.5" width="14" height="16" rx="3.2"/><path d="M9 4.6V6h6V4.6"/><path d="M9 10.5h6M9 14h6M9 17.5h4"/></svg></span>监督者<small>上门 · 量表</small></button>
+      <button class="role-btn" id="roleAdmin" data-role="admin"><span class="ri"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 2.8v5.9c0 4.2-2.9 7.3-7 9-4.1-1.7-7-4.8-7-9V5.8L12 3z"/><path d="M9.2 12.2l2 2 3.6-3.8"/></svg></span>管理<small>审核 · 培训</small></button>
+    </div>
+    <input id="username" class="field" placeholder="用户名（2-20 位）" maxlength="20" autocomplete="username">
+    <input id="password" class="field dev-hide" type="password" placeholder="密码（至少 6 位）" maxlength="64" autocomplete="current-password">
+    <div class="roles dev-hide" id="modeRow" style="margin-top:2px">
+      <button class="role-btn active" id="modeLogin">登录</button>
+      <button class="role-btn" id="modeRegister">注册</button>
+    </div>
+    <button class="btn dev-hide" id="authBtn">登录</button>
+    <button class="btn" id="devEnter" style="display:none">直接进入（测试模式）</button>
+    <p class="err" id="authErr"></p>
+    <p class="disclaimer" id="devTip" style="display:none;margin-top:10px">当前为测试模式，已跳过登录。同名会复用同一身份，方便反复调试。</p>
+    <p class="disclaimer" style="margin-top:14px">本平台提供康复陪伴与训练监督服务，不提供诊断、治疗、用药等医疗服务。如有医疗需求请遵医嘱或就医。</p>
+    <p style="margin-top:10px;text-align:center;font-size:11.5px"><a href="/rehab/docs/" target="_blank" rel="noopener" style="color:var(--brand-d);text-decoration:none;border-bottom:1px dashed var(--brand)">临床审阅稿 v0.9（供医生审阅）</a></p>
+  </div>
+</div>
+
+<!-- 主界面 -->
+<div id="mainView" class="wrap hidden">
+  <div class="topbar">
+    <div class="who">
+      <div class="avatar" id="avatar">我</div>
+      <div>
+        <div class="name" id="meName">—</div>
+        <div class="role" id="meRole">—</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <a href="/rehab/docs/" target="_blank" rel="noopener" style="font-size:12px;color:var(--dim);text-decoration:none;border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 12px">审阅稿</a>
+      <button class="logout" id="logoutBtn">退出</button>
+    </div>
+  </div>
+
+  <!-- ============ 患者 ============ -->
+  <div id="patientPanel" class="hidden">
+    <div class="hero" id="pHero">
+      <div class="hero-top"><span>今日概览</span><span id="pHeroDate"></span></div>
+      <div class="hero-metrics" id="pHeroMetrics"></div>
+    </div>
+    <div class="tabs" id="pTabbar">
+      <button class="tab active" data-view="p-book">预约</button>
+      <button class="tab" data-view="p-records">康复记录</button>
+      <button class="tab" data-view="p-alerts">提醒·周报</button>
+      <button class="tab" data-view="p-profile">康复档案</button>
+    </div>
+
+    <div class="block" data-pane="p-book">
+      <p class="block-title"><b>预约上门监督</b><span id="todayHint"></span></p>
+
+      <select id="areaSel" class="field"></select>
+      <div style="display:flex;gap:8px">
+        <input id="dateSel" class="field" type="date" style="flex:1">
+        <select id="slotSel" class="field" style="flex:1.2"></select>
+      </div>
+
+      <p class="block-title" style="margin:2px 0 8px"><b>可选监督者</b><span id="supCount"></span></p>
+      <div id="supList"></div>
+
+      <input id="address" class="field" placeholder="详细地址（小区 / 楼栋 / 门牌）" maxlength="80">
+      <p class="block-title" style="margin:12px 0 4px"><b>今天想解决什么</b><span>可多选，不知道选什么就都选上</span></p>
+      <div class="chips" id="focusChips" style="margin-bottom:8px"></div>
+      <input id="complaint" class="field" placeholder="再补一句：什么时候最难受 / 什么情况会更严重（选填）" maxlength="60">
+      <button class="btn" id="bookBtn" style="margin-top:8px">确认预约</button>
+      <p class="err" id="bookErr"></p>
+    </div>
+
+    <div class="block" id="patientBookings" data-pane="p-book">
+      <p class="block-title"><b>我的预约</b></p>
+      <div id="patientBookingList"></div>
+    </div>
+
+    <div class="block" id="toolboxBlock" data-pane="p-records">
+      <p class="block-title"><b>专项量表趋势</b><span id="assessCount"></span></p>
+      <select id="toolboxType" class="field"></select>
+      <div id="toolboxChart"></div>
+      <div id="toolboxList"></div>
+    </div>
+
+    <div class="block" id="patientScales" data-pane="p-records">
+      <p class="block-title"><b>每日训练量表</b><span id="scaleCount"></span></p>
+      <div class="legend">
+        <div class="lg"><span class="sw" style="background:#c07d18"></span>疼痛 VAS</div>
+        <div class="lg"><span class="sw" style="background:#0e9f8e"></span>训练完成度</div>
+      </div>
+      <div id="chartBox"></div>
+      <div id="scaleTable"></div>
+    </div>
+
+    <div class="block" data-pane="p-alerts">
+      <p class="block-title"><b>异常提醒</b><span id="alertCount"></span></p>
+      <div id="alertList"></div>
+    </div>
+
+    <div class="block" data-pane="p-alerts">
+      <p class="block-title"><b>康复周报</b><span>可发给家属 / 医生</span></p>
+      <button class="btn ghost sm" id="weeklyBtn">生成近 7 天周报</button>
+      <div id="inviteBox" style="margin-top:12px"></div>
+    </div>
+
+    <div class="block" id="profileBlock" data-pane="p-profile">
+      <p class="block-title"><b>康复档案</b><span id="profileStatus"></span></p>
+      <input id="condFilter" class="field" placeholder="搜一下病种，如：膝、脊髓、骨折、吞咽" style="margin-bottom:8px">
+      <select id="conditionSel" class="field"></select>
+      <p id="neuroHint" style="font-size:11.5px;color:var(--dim);margin:-8px 2px 10px;line-height:1.5"></p>
+      <div style="display:flex;gap:8px">
+        <select id="sideSel" class="field" style="flex:1"></select>
+        <input id="onsetDate" class="field" type="date" style="flex:1" title="发病 / 手术日期">
+      </div>
+
+      <p class="block-title" style="margin:12px 0 8px"><b>最想解决的问题</b><span>可多选，用大白话选就行</span></p>
+      <div class="chips" id="concernChips"></div>
+      <input id="concernOther" class="field" placeholder="上面没有？自己写一句（选填，14 字内）" maxlength="16">
+
+      <p class="block-title" style="margin:12px 0 8px"><b>伴随问题</b><span>可多选</span></p>
+      <div class="chips" id="deficitChips"></div>
+
+      <textarea id="profileNote" class="note-input" placeholder="其他说明：高血压、糖尿病、吃哪些药、既往手术、家里有没有电梯等" maxlength="200"></textarea>
+      <button class="btn ghost sm" id="saveProfile" style="margin-top:10px">保存档案</button>
+
+      <p class="block-title" style="margin:18px 0 8px"><b>医院诊断报告</b><span id="reportCount"></span></p>
+      <div id="reportList"></div>
+      <input type="file" id="reportFile" accept="image/jpeg,image/png,image/webp,image/heic,application/pdf" style="display:none">
+      <button class="btn ghost sm" id="reportPick" style="margin-top:8px">上传报告照片 / PDF</button>
+      <p class="disclaimer" style="margin-top:8px">报告仅你本人、绑定家属和接单监督者可见，不会公开。单份上限 12MB，最多 10 份。</p>
+    </div>
+  </div>
+
+  <!-- ============ 监督者 ============ -->
+  <div id="supervisorPanel" class="hidden">
+    <div class="hero" id="sHero">
+      <div class="hero-top"><span>今日概览</span><span class="hero-state" id="sHeroState">离线</span></div>
+      <div class="hero-metrics" id="sHeroMetrics"></div>
+    </div>
+    <div class="tabs" id="sTabbar">
+      <button class="tab active" data-view="s-jobs">接单</button>
+      <button class="tab" data-view="s-flow">流程</button>
+      <button class="tab" data-view="s-tools">量表</button>
+      <button class="tab" data-view="s-verify">认证培训</button>
+      <button class="tab" data-view="s-plan">方案</button>
+    </div>
+
+    <div class="block" data-pane="s-jobs">
+      <p class="block-title"><b>接单状态</b><span id="onlinePill" class="pill"><span class="dot"></span>离线</span></p>
+      <div class="switch-line">
+        <div>
+          <div style="font-size:13px">上线后可接收患者预约</div>
+          <div style="font-size:11.5px;color:var(--dim)">服务区域：<span id="areasText">未设置</span></div>
+        </div>
+        <label class="toggle"><input type="checkbox" id="onlineToggle"><span class="slider"></span></label>
+      </div>
+      <div class="chips" id="areaChips" style="margin-top:10px"></div>
+    </div>
+
+    <div class="block" data-pane="s-jobs">
+      <p class="block-title"><b>待确认预约</b><span id="pendingCount"></span></p>
+      <div id="pendingList"></div>
+    </div>
+
+    <div class="block" data-pane="s-jobs">
+      <p class="block-title"><b>进行中</b></p>
+      <div id="activeList"></div>
+    </div>
+
+    <div class="block" data-pane="s-jobs">
+      <p class="block-title"><b>补填每日量表</b></p>
+      <div style="display:flex;gap:8px">
+        <select id="patientSel" class="field" style="flex:1;margin-bottom:0"></select>
+        <button class="btn ghost" id="addScaleBtn" style="flex:0 0 96px">填写</button>
+      </div>
+    </div>
+
+    <div class="block" data-pane="s-jobs">
+      <p class="block-title"><b>历史服务</b></p>
+      <div id="historyList"></div>
+    </div>
+
+
+    <div class="block" data-pane="s-flow">
+      <p class="block-title"><b>陪练流程</b><span>按 Brunnstrom 分期逐步执行</span></p>
+      <div id="flowRules"></div>
+      <select id="flowPatient" class="field" style="margin-top:12px"></select>
+      <select id="flowStage" class="field"></select>
+      <button class="btn" id="flowStart">开始本次陪练</button>
+      <div id="flowRunning" style="margin-top:16px"></div>
+      <p class="block-title" style="margin:14px 0 8px"><b>流程记录</b></p>
+      <div id="flowHistory"></div>
+      <p class="disclaimer" style="margin-top:10px">流程用于安排训练顺序与交接记录，不构成医疗处置方案。出现胸痛、意识改变、新发无力等情况一律先停止并拨打 120。</p>
+    </div>
+
+    <div class="block" id="supToolbox" data-pane="s-tools">
+      <p class="block-title"><b>量表工具箱</b><span>选患者 → 点量表 → 录入</span></p>
+      <select id="assessPatient" class="field"></select>
+      <div id="patientBrief" style="font-size:11.5px;color:#7b8b88;margin:-2px 0 8px;line-height:1.6"></div>
+      <div id="supReports" style="margin-bottom:10px"></div>
+      <div class="tool-grid" id="toolCards"></div>
+      <div id="assessRecent" style="margin-top:14px"></div>
+    </div>
+
+    <div class="block" data-pane="s-verify">
+      <p class="block-title"><b>上岗资格</b><span id="qualPill" class="pill"><span class="dot"></span>未认证</span></p>
+      <div id="qualBody" style="font-size:12.5px;color:#7b8b88;line-height:1.9"></div>
+      <div id="credForm" style="margin-top:12px"></div>
+    </div>
+
+    <div class="block" data-pane="s-verify">
+      <p class="block-title"><b>培训课程</b><span id="courseCount"></span></p>
+      <div id="courseList"></div>
+      <button class="btn ghost sm" id="demoCert" style="margin-top:10px;display:none">测试模式：一键完成认证</button>
+      <p class="disclaimer" style="margin-top:10px">课程与测验用于平台上岗资格培训，不替代任何医护执业资格。</p>
+    </div>
+
+    <div class="block" data-pane="s-plan">
+      <p class="block-title"><b>训练方案参考</b><span>仅脑卒中 / 脑外伤等偏瘫适用</span></p>
+      <p style="font-size:11.5px;color:var(--dim);margin:-6px 0 10px;line-height:1.6">其他病种请到「流程」页选对应流程：骨科术后 / 心肺 / 神经 / 通用，四套各有各的重点。</p>
+      <select id="stageSel" class="field">
+        <option value="0">Ⅰ-Ⅱ 期 · 卧床／联合反应期</option>
+        <option value="1">Ⅲ 期 · 共同运动期</option>
+        <option value="2">Ⅳ-Ⅴ 期 · 分离运动期</option>
+        <option value="3">Ⅵ 期 · 接近正常期</option>
+      </select>
+      <div id="stageBody" style="font-size:12.5px;color:#7b8b88;line-height:1.9"></div>
+      <p class="disclaimer" style="margin-top:10px">方案仅供参考，须以主治医生与康复治疗师意见为准；训练中出现疼痛加重、头晕、胸闷立即停止。</p>
+    </div>
+  </div>
+
+  <!-- ============ 管理员 ============ -->
+  <div id="adminPanel" class="hidden">
+    <div class="block">
+      <p class="block-title"><b>资料审核台</b><span id="adminStats"></span></p>
+      <div id="pendingReview"></div>
+    </div>
+    <div class="block">
+      <p class="block-title"><b>全部监督者</b><span>审核 / 培训 / 在线</span></p>
+      <div id="supOverview"></div>
+    </div>
+    <p class="disclaimer">平台仅做资料与培训管理，不构成对监督者执业资质的认定。</p>
+  </div>
+
+  <p class="disclaimer" style="margin-top:6px">
+    平台仅提供康复陪伴、训练监督与记录服务，不提供诊断、治疗、处方等医疗行为；量表仅用于训练记录，不作为医疗判断依据。
+  </p>
+</div>
+
+
+<!-- 陪练流程全屏界面 -->
+<div id="flowView">
+  <div class="fv-head">
+    <button class="fv-back" id="fvBack">‹</button>
+    <div class="fv-ht"><b id="fvTitle">陪练流程</b><span id="fvSub"></span></div>
+    <div class="fv-timer" id="fvTimer">00:00</div>
+  </div>
+  <div class="fv-rail" id="fvRail"></div>
+  <div class="fv-main" id="fvMain"></div>
+  <div class="fv-foot" id="fvFoot"></div>
+</div>
+
+
+<div id="rmask" class="mask"></div>
+<div id="rsheet" class="sheet">
+  <div class="sheet-head">
+    <b id="rTitle">诊断报告</b>
+    <button class="sheet-close" id="rClose">×</button>
+  </div>
+  <div class="sheet-body">
+    <div id="rList"></div>
+    <p class="disclaimer" style="margin-top:8px">报告仅用于了解病史与训练风险，平台不做诊断解读。</p>
+  </div>
+</div>
+
+<!-- 量表弹层 -->
+<div id="mask" class="mask"></div>
+<div id="sheet" class="sheet">
+  <div class="sheet-head">
+    <b id="sheetTitle">填写今日量表</b>
+    <button class="sheet-close" id="sheetClose">×</button>
+  </div>
+  <div class="sheet-body">
+    <p class="kv" id="sheetMeta" style="margin-bottom:12px"></p>
+
+    <div class="slider-row">
+      <div class="lab"><span>疼痛评分 VAS</span><span class="val" id="vasVal">3</span></div>
+      <input type="range" id="vas" min="0" max="10" step="1" value="3">
+      <div style="display:flex;justify-content:space-between;font-size:10.5px;color:#8b9a97"><span>0 无痛</span><span>10 剧痛</span></div>
+    </div>
+
+    <div class="slider-row">
+      <div class="lab"><span>训练完成度</span><span class="val" id="compVal">80</span></div>
+      <input type="range" id="completion" min="0" max="100" step="5" value="80">
+      <div style="display:flex;justify-content:space-between;font-size:10.5px;color:#8b9a97"><span>0 未完成</span><span>100 全部完成</span></div>
+    </div>
+
+    <div class="slider-row">
+      <div class="lab"><span>肌力等级 MMT</span><span class="val" id="mmtVal">3</span></div>
+      <input type="range" id="mmt" min="0" max="5" step="1" value="3">
+      <div style="display:flex;justify-content:space-between;font-size:10.5px;color:#8b9a97"><span>0 无收缩</span><span>5 正常</span></div>
+    </div>
+
+    <div class="slider-row">
+      <div class="lab"><span>疲劳程度</span><span class="val" id="fatigueVal">3</span></div>
+      <input type="range" id="fatigue" min="0" max="10" step="1" value="3">
+      <div style="display:flex;justify-content:space-between;font-size:10.5px;color:#8b9a97"><span>0 轻松</span><span>10 极度疲劳</span></div>
+    </div>
+
+    <div class="switch-line" style="margin-bottom:10px">
+      <div style="font-size:13px">训练中出现异常（疼痛加重 / 不适）</div>
+      <label class="toggle"><input type="checkbox" id="abnormal"><span class="slider"></span></label>
+    </div>
+
+    <textarea id="scaleNote" class="note-input" placeholder="补充说明（异常情况必填，例如：训练中膝部疼痛加重）" maxlength="200"></textarea>
+    <button class="btn" id="scaleSubmit" style="margin-top:12px">提交量表</button>
+    <p class="err" id="scaleErr"></p>
+  </div>
+</div>
+
+<div id="amask" class="mask"></div>
+<div id="asheet" class="sheet">
+  <div class="sheet-head">
+    <b id="aTitle">评估量表</b>
+    <button class="sheet-close" id="aClose">×</button>
+  </div>
+  <div class="sheet-body">
+    <p class="kv" id="aMeta"></p>
+    <p style="font-size:11.5px;color:var(--dim);margin:2px 0 12px" id="aDesc"></p>
+    <div id="aItems"></div>
+    <textarea id="aNote" class="note-input" placeholder="本次评估补充说明（选填）" maxlength="200"></textarea>
+    <p class="kv" id="aTotal" style="margin:12px 0 4px"></p>
+    <button class="btn" id="aSubmit">提交评估</button>
+    <p class="err" id="aErr"></p>
+  </div>
+</div>
+
+<div id="wmask" class="mask"></div>
+<div id="wsheet" class="sheet">
+  <div class="sheet-head">
+    <b>康复周报</b>
+    <button class="sheet-close" id="wClose">×</button>
+  </div>
+  <div class="sheet-body">
+    <div id="wBody"></div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn ghost sm" id="wCopy">复制文字版</button>
+      <button class="btn sm" id="wPrint">打印 / 存 PDF</button>
+    </div>
+    <p class="disclaimer" style="margin-top:10px">周报用于家属了解训练情况，不构成医疗诊断。</p>
+  </div>
+</div>
+
+<div id="bmask" class="mask"></div>
+<div id="bsheet" class="sheet">
+  <div class="sheet-head">
+    <b>绑定患者</b>
+    <button class="sheet-close" id="bClose">×</button>
+  </div>
+  <div class="sheet-body">
+    <p style="font-size:12.5px;color:#7b8b88;margin-bottom:10px">绑定后即可查看该患者的训练记录、量表与提醒，并可代为预约。</p>
+    <select id="bindPatient" class="field"></select>
+    <input id="bindCode" class="field" placeholder="或填写患者提供的绑定码" maxlength="12">
+    <button class="btn" id="bindBtn">确认绑定</button>
+    <p class="err" id="bindErr"></p>
+  </div>
+</div>
+
+<div id="cmask" class="mask"></div>
+<div id="csheet" class="sheet">
+  <div class="sheet-head">
+    <b id="cTitle">培训课程</b>
+    <button class="sheet-close" id="cClose">×</button>
+  </div>
+  <div class="sheet-body">
+    <div id="cPoints"></div>
+    <p class="block-title" style="margin:16px 0 8px"><b>课程视频</b><span id="cVideoCount"></span></p>
+    <div id="cVideos"></div>
+    <div class="upload-box hidden" id="cUploadWrap">
+      <input type="file" id="cFile" accept="video/mp4,video/webm,video/quicktime,.mkv">
+      <input id="cVideoTitle" placeholder="视频标题，如：偏瘫位摆放示范" maxlength="60">
+      <button class="btn" id="cVideoUpload" style="margin-top:8px">上传视频（最大 300MB）</button>
+      <div class="prog-wrap hidden" id="cProgWrap"><div class="prog-bar" id="cProg"></div></div>
+      <div class="prog-txt hidden" id="cProgText"></div>
+    </div>
+    <p class="block-title" style="margin:18px 0 8px"><b>随堂测验</b><span>答对 2 题及格</span></p>
+    <p class="kv" id="cGate" style="margin:0 0 10px;font-size:12px"></p>
+    <div id="cQuiz"></div>
+    <p class="kv" id="cResult" style="margin:12px 0 6px"></p>
+    <button class="btn" id="cSubmit">提交测验</button>
+    <p class="err" id="cErr"></p>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const loginView=$('loginView'), mainView=$('mainView');
+
+  let role='patient', mode='login', meta=null, me=null, ws=null, snap=null;
+  let supListData=[], selectedSupervisor=null, scaleCtx=null;
+
+  const STATUS={
+    pending:['待确认','b-pending'],
+    confirmed:['已确认','b-confirmed'],
+    checked_in:['已到场','b-checked_in'],
+    completed:['已完成','b-completed'],
+    cancelled:['已取消','b-cancelled'],
+  };
+  const SLOT_LABEL = id => (meta && meta.slots.find(s=>s.id===id)||{}).label || id;
+
+  async function api(p, body){
+    const res = await fetch('/rehab'+p, {
+      method: body===undefined?'GET':'POST',
+      headers: body===undefined?{}:{'Content-Type':'application/json'},
+      body: body===undefined?undefined:JSON.stringify(body),
+      credentials:'same-origin'
+    });
+    let data={}; try{data=await res.json()}catch(e){}
+    return {status:res.status, data};
+  }
+  function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2200); }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function statusBadge(s){ const v=STATUS[s]||['未知','b-completed']; return '<span class="badge '+v[1]+'">'+v[0]+'</span>'; }
+
+  /* ---------- 登录 ---------- */
+  $('rolePatient').onclick=()=>setRole('patient');
+  $('roleFamily').onclick=()=>setRole('family');
+  $('roleSupervisor').onclick=()=>setRole('supervisor');
+  $('roleAdmin').onclick=()=>setRole('admin');
+  $('modeLogin').onclick=()=>setMode('login');
+  $('modeRegister').onclick=()=>setMode('register');
+  function setRole(r){
+    role=r;
+    $('rolePatient').classList.toggle('active',r==='patient');
+    $('roleFamily').classList.toggle('active',r==='family');
+    $('roleSupervisor').classList.toggle('active',r==='supervisor');
+    $('roleAdmin').classList.toggle('active',r==='admin');
+    if(meta && meta.devMode){
+      const m={patient:'名称（留空 = 测试患者）',family:'名称（留空 = 测试家属）',supervisor:'名称（留空 = 测试监督者）',admin:'名称（留空 = 管理员）'};
+      $('username').placeholder=m[r]||'名称';
+    }
+  }
+  function setMode(m){ mode=m; $('modeLogin').classList.toggle('active',m==='login'); $('modeRegister').classList.toggle('active',m==='register'); $('authBtn').textContent=m==='login'?'登录':'注册并登录'; }
+
+  $('authBtn').onclick=async()=>{
+    const err=$('authErr'); err.textContent='';
+    const username=$('username').value.trim(), password=$('password').value;
+    if(!username||!password){ err.textContent='请填写用户名和密码'; return; }
+    $('authBtn').disabled=true;
+    const path= mode==='login'?'/api/login':'/api/register';
+    const body= mode==='login'?{username,password}:{username,password,role};
+    const {status,data}=await api(path,body);
+    $('authBtn').disabled=false;
+    if(status!==200||!data.ok){ err.textContent=data.err||'操作失败'; return; }
+    me={user:data.user, role:data.role, profile:data.profile};
+    $('password').value='';
+    enterMain();
+  };
+
+  /* 测试模式：免登录直接进入 */
+  $('devEnter').onclick=async()=>{
+    const err=$('authErr'); err.textContent='';
+    const name=$('username').value.trim();
+    $('devEnter').disabled=true;
+    const {status,data}=await api('/api/dev-login',{role,name});
+    $('devEnter').disabled=false;
+    if(status!==200||!data.ok){ err.textContent=data.err||'进入失败'; return; }
+    me={user:data.user, role:data.role, profile:data.profile};
+    if(data.linkedError) toast(data.linkedError);
+    enterMain();
+  };
+
+  /* ---------- 进入主界面 ---------- */
+  function enterMain(){
+    loginView.classList.add('hidden');
+    mainView.classList.remove('hidden');
+    $('meName').textContent=me.user;
+    $('avatar').textContent=me.user.slice(0,1);
+    const isSup = me.role==='supervisor';
+    const isFamily = me.role==='family';
+    const isAdmin = me.role==='admin';
+    familyMode = isFamily;
+    $('meRole').textContent = isSup?'康复监督者':(isFamily?'家属 · 查看与代约':(isAdmin?'管理员':'患者'));
+    $('patientPanel').classList.toggle('hidden', isSup||isAdmin);
+    $('supervisorPanel').classList.toggle('hidden', !isSup);
+    $('adminPanel').classList.toggle('hidden', !isAdmin);
+    if(isAdmin){ /* 管理员无表单，等快照 */ }
+    else if(isSup) buildSupervisorUI();
+    else buildPatientUI();
+    if(!isAdmin){
+      setView(isSup?'s-jobs':'p-book');
+      bindTabs(isSup?'sTabbar':'pTabbar');
+    }
+    connect();
+  }
+
+  /* ---------- 患者端初始化 ---------- */
+  function buildPatientUI(){
+    $('todayHint').textContent = meta.today;
+    $('areaSel').innerHTML = '<option value="">选择区域</option>' + meta.areas.map(a=>'<option>'+a+'</option>').join('');
+    $('slotSel').innerHTML = meta.slots.map(s=>'<option value="'+s.id+'">'+s.label+'</option>').join('');
+    $('dateSel').value = meta.today;
+
+    const chips=$('focusChips');
+    const fillChips=()=>{
+      chips.innerHTML='';
+      const list=((me.profile&&me.profile.concerns)||[]).length? me.profile.concerns : [];
+      (meta.concerns||[]).forEach((f)=>{
+        const b=document.createElement('button'); b.className='chip'+(list.includes(f)?' active':''); b.textContent=f;
+        b.onclick=()=>b.classList.toggle('active'); chips.appendChild(b);
+      });
+    };
+    fillChips();
+    chips._fill=fillChips;
+
+    ['areaSel','dateSel','slotSel'].forEach(id=>$(id).onchange=loadSupervisors);
+    buildProfileUI();
+    refreshPatientReports();
+    $('toolboxType').onchange = () => renderToolboxAssess(snap ? (snap.assessments || []) : []);
+    loadToolbox().then(() => { if (snap) render(); });
+    loadSupervisors();
+  }
+
+  async function loadSupervisors(){
+    const area=$('areaSel').value, date=$('dateSel').value, slot=$('slotSel').value;
+    const q = '/api/supervisors?area='+encodeURIComponent(area)+'&date='+date+'&slot='+slot;
+    const {data}=await api(q);
+    supListData = (data&&data.supervisors)||[];
+    selectedSupervisor=null;
+    $('supCount').textContent = supListData.filter(s=>s.available).length+' 人可约';
+    const box=$('supList');
+    if(!supListData.length){ box.innerHTML='<div class="empty">暂无监督者</div>'; return; }
+    box.innerHTML = supListData.map(s=>{
+      const tag = s.available? '<span class="tag ok">可约</span>' : '<span class="tag no">不可约</span>';
+      const rate = (s.rating||5).toFixed(1);
+      return '<div class="sup-item" data-name="'+esc(s.name)+'">'+
+        '<div class="h"><span class="n">'+esc(s.name)+'</span>'+tag+'</div>'+
+        '<div class="m">'+ (s.areas.length? esc(s.areas.join('、')) : '未设置区域') +' · 评分 '+rate+' · 已完成 '+s.done+' 单</div>'+
+      '</div>';
+    }).join('');
+    box.querySelectorAll('.sup-item').forEach(el=>{
+      el.onclick=()=>{
+        const name=el.dataset.name;
+        const s=supListData.find(x=>x.name===name);
+        if(!s.available){ toast('该监督者当前不可约'); return; }
+        selectedSupervisor=name;
+        box.querySelectorAll('.sup-item').forEach(x=>x.classList.remove('sel'));
+        el.classList.add('sel');
+      };
+    });
+  }
+
+  $('bookBtn').onclick=async()=>{
+    const err=$('bookErr'); err.textContent='';
+    const area=$('areaSel').value, date=$('dateSel').value, slot=$('slotSel').value;
+    const address=$('address').value.trim();
+    const focus=[...$('focusChips').querySelectorAll('.chip.active')].map(b=>b.textContent);
+    const complaint=($('complaint')?$('complaint').value.trim():'');
+    if(!selectedSupervisor){ err.textContent='请先选择监督者'; return; }
+    if(!focus.length && !complaint){ err.textContent='请至少选一个想解决的问题'; return; }
+    if(!area){ err.textContent='请选择区域'; return; }
+    if(address.length<3){ err.textContent='请填写详细地址'; return; }
+    $('bookBtn').disabled=true; $('bookBtn').textContent='提交中…';
+    const {status,data}=await api('/api/book',{supervisor:selectedSupervisor,date,slot,area,address,focus,complaint});
+    $('bookBtn').disabled=false; $('bookBtn').textContent='确认预约';
+    if(status!==200||!data.ok){ err.textContent=data.err||'预约失败'; return; }
+    toast('预约已提交，等待监督者确认');
+    $('address').value=''; selectedSupervisor=null;
+    loadSupervisors();
+    refresh();
+  };
+
+  /* ---------- 监督者端初始化 ---------- */
+  function buildSupervisorUI(){
+    const chips=$('areaChips'); chips.innerHTML='';
+    const sel=(me.profile&&me.profile.areas)||[];
+    meta.areas.forEach(a=>{
+      const b=document.createElement('button'); b.className='chip'+(sel.includes(a)?' active':''); b.textContent=a;
+      b.onclick=()=>b.classList.toggle('active');
+      chips.appendChild(b);
+    });
+    $('onlineToggle').checked=!!(me.profile&&me.profile.online);
+    buildToolCards();
+    $('assessPatient').onchange = renderPatientBrief;
+    renderOnlinePill();
+    $('stageSel').onchange = () => renderStagePlan(+$('stageSel').value);
+    renderStagePlan(0);
+    loadToolbox().then(()=>{ if(snap) render(); });
+    loadProtocol();
+  }
+
+  function selectedAreas(){ return [...$('areaChips').querySelectorAll('.chip.active')].map(b=>b.textContent); }
+
+  function renderOnlinePill(){
+    const on=$('onlineToggle').checked;
+    const p=$('onlinePill'); p.className='pill '+(on?'on':''); p.innerHTML='<span class="dot"></span>'+(on?'在线':'离线');
+    const areas=(me.profile&&me.profile.areas)||[];
+    $('areasText').textContent = areas.length? areas.join('、') : '未设置';
+    const hs=$('sHeroState'); if(hs) hs.textContent = on ? '在线接单中' : '当前离线';
+  }
+
+  $('onlineToggle').onchange=async()=>{
+    const areas=selectedAreas();
+    if($('onlineToggle').checked && !areas.length){ toast('请先选择服务区域'); $('onlineToggle').checked=false; return; }
+    const {status,data}=await api('/api/supervisor/online',{online:$('onlineToggle').checked, areas});
+    if(status!==200||!data.ok){
+      toast(data.err||'设置失败');
+      $('onlineToggle').checked=!$('onlineToggle').checked;
+      if(data.needCert) activateTab('s-verify');
+      return;
+    }
+    me.profile.areas=data.areas; me.profile.online=data.online;
+    toast(data.online?'已上线':'已下线');
+    renderOnlinePill();
+  };
+
+  function activateTab(view){
+    setView(view);
+    const bar=$('sTabbar');
+    if(bar) bar.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.view===view));
+  }
+
+  /* ---------- 渲染预约卡 ---------- */
+  function bookingCard(b, ctx){
+    const focus = (b.focus&&b.focus.length)? b.focus.join('、') : '未指定';
+    let html='<div class="booking"><div class="head"><span class="id">'+b.id+'</span>'+statusBadge(b.status)+'</div>'+
+      '<div class="kv"><span>时间</span><span>'+esc(b.date)+' · '+esc(SLOT_LABEL(b.slot))+'</span></div>'+
+      '<div class="kv"><span>患者</span><span>'+esc(b.patient)+'</span></div>'+
+      '<div class="kv"><span>地址</span><span>'+esc(b.area)+' '+esc(b.address)+'</span></div>'+
+      '<div class="kv"><span>想解决的问题</span><span>'+esc(focus)+'</span></div>'+
+      (b.complaint? '<div class="kv"><span>补充</span><span>'+esc(b.complaint)+'</span></div>' : '');
+
+    let acts='';
+    if(ctx==='sup'){
+      if(b.status==='pending') acts='<button class="btn sm" data-act="confirm" data-id="'+b.id+'">确认接单</button><button class="btn ghost sm" data-act="cancel" data-id="'+b.id+'">拒绝</button>';
+      else if(b.status==='confirmed') acts='<button class="btn sm" data-act="checkin" data-id="'+b.id+'">到场签到</button>';
+      else if(b.status==='checked_in') acts='<button class="btn sm" data-act="complete" data-id="'+b.id+'">完成并填量表</button><button class="btn ghost sm" data-act="flow" data-patient="'+esc(b.patient)+'">按流程陪练</button>';
+    }else{
+      if(['pending','confirmed'].includes(b.status)) acts='<button class="btn danger sm" data-act="cancel" data-id="'+b.id+'">取消预约</button>';
+    }
+    if(acts) html+='<div class="actions">'+acts+'</div>';
+    html+='</div>';
+    return html;
+  }
+
+  /* ---------- 偏瘫陪练流程 ---------- */
+  let PROG=null, flow=null, flowList={running:[],list:[]}, flowTick=null;
+  let fvMode='step', fvInc=null, fvErr='';
+
+  function pad2(n){ return String(n).padStart(2,'0'); }
+  function fmtClock(ms){
+    const t=Math.max(0,Math.floor(ms/1000));
+    return pad2(Math.floor(t/60))+':'+pad2(t%60);
+  }
+  function fmtClockH(ms){
+    const t=Math.max(0,Math.floor(ms/1000));
+    const h=Math.floor(t/3600);
+    return (h?h+':'+pad2(Math.floor((t%3600)/60)):pad2(Math.floor(t/60)))+':'+pad2(t%60);
+  }
+  function fmtDay(ts){
+    const d=new Date(ts); return (d.getMonth()+1)+'月'+d.getDate()+'日 '+pad2(d.getHours())+':'+pad2(d.getMinutes());
+  }
+
+  async function loadProtocol(){
+    if(!PROG){
+      const {status,data}=await api('/api/protocol');
+      if(status===200&&data.ok) PROG=data;
+    }
+    await loadSessions();
+    renderFlowPane();
+    return PROG;
+  }
+
+  async function loadSessions(){
+    const {status,data}=await api('/api/sessions');
+    if(status===200&&data.ok) flowList={ running:data.running||[], list:data.list||[] };
+  }
+
+  function renderFlowPane(){
+    if(!PROG) return;
+    const rr=$('flowRules');
+    if(rr && rr.dataset.on!=='1'){
+      rr.dataset.on='1';
+      rr.innerHTML=PROG.rules.map((t,i)=>'<div class="fv-rule"><span class="n">'+(i+1)+'</span><span class="t">'+esc(t)+'</span></div>').join('');
+    }
+    const ps=$('flowPatient');
+    if(ps){
+      const pats=(snap&&snap.patients)||[]; const cur=ps.value;
+      ps.innerHTML = pats.length? pats.map(p=>'<option>'+esc(p)+'</option>').join('') : '<option value="">暂无患者</option>';
+      if(cur && pats.includes(cur)) ps.value=cur;
+    }
+    const sg=$('flowStage');
+    if(sg && sg.dataset.on!=='1'){
+      sg.dataset.on='1';
+      sg.innerHTML=PROG.stages.map(x=>'<option value="'+x.id+'">'+esc(x.label)+'</option>').join('');
+      sg.onchange=()=>{ sg.dataset.manual='1'; };
+    }
+    const ps2=$('flowPatient');
+    if(ps2 && ps2.dataset.hooked!=='1'){
+      ps2.dataset.hooked='1';
+      ps2.onchange=async ()=>{
+        if(!sg || sg.dataset.manual==='1') return;
+        try{
+          const {data}=await api('/api/patient/profile?patient='+encodeURIComponent(ps2.value));
+          const c=data&&data.ok&&data.profile? data.profile.condition:'';
+          const map=(meta&&meta.conditionProgram)||{};
+          if(c && map[c]) sg.value=map[c];
+          else if(c && !isBrunstromCondition(c)) sg.value='g';
+        }catch(e){ /* ignore */ }
+      };
+    }
+    const run=$('flowRunning');
+    if(run){
+      run.innerHTML = flowList.running.length
+        ? flowList.running.map(x=>
+            '<div class="flow-card"><div class="head"><b>'+esc(x.patient)+'</b><span class="pill on"><span class="dot"></span>进行中</span></div>'+
+            '<div class="kv"><span>分期</span><span>'+esc(x.stageLabel)+'</span></div>'+
+            '<div class="kv"><span>进度</span><span>'+x.currentIndex+' / '+x.total+' 步 · 已用 '+fmtClock(Date.now()-x.startedAt)+'</span></div>'+
+            '<button class="btn sm" data-flow="'+x.id+'" style="margin-top:10px">继续这次流程</button></div>').join('')
+        : '<div class="empty">还没有进行中的流程，选好患者和分期后点上面的按钮开始</div>';
+    }
+    const his=$('flowHistory');
+    if(his){
+      his.innerHTML = flowList.list.length
+        ? flowList.list.slice(0,8).map(x=>{
+            const bad=(x.incidents||[]).length;
+            return '<div class="kv"><span>'+esc(fmtDay(x.startedAt))+' · '+esc(x.patient)+' · '+esc(x.stageLabel)+'</span>'+
+              '<span>'+(x.status==='done'? '完成 '+x.total+' 步' : '已终止')+
+              (bad? ' · <b style="color:#d9564f">异常 '+bad+'</b>':'')+'</span></div>';
+          }).join('')
+        : '<div class="empty">还没有流程记录</div>';
+    }
+  }
+
+  async function startFlow(){
+    const patient=$('flowPatient').value, stage=$('flowStage').value;
+    if(!patient) return toast('请先选择患者');
+    const {status,data}=await api('/api/session/start',{patient,stage});
+    if(status!==200||!data.ok) return toast(data.err||'发起失败');
+    flow=data.session; fvMode='step'; fvInc=null;
+    await loadSessions(); renderFlowPane();
+    $('flowView').classList.add('open');
+    if(flowTick) clearInterval(flowTick);
+    flowTick=setInterval(()=>{ const t=$('fvTimer'); if(t&&flow) t.textContent=fmtClockH((flow.endedAt||Date.now())-flow.startedAt); },1000);
+    renderFlow();
+  }
+
+  function openFlow(session, mode){
+    flow=session; fvMode=mode||'step'; fvInc=null;
+    $('flowView').classList.add('open');
+    if(flowTick) clearInterval(flowTick);
+    flowTick=setInterval(()=>{ const t=$('fvTimer'); if(t&&flow) t.textContent=fmtClockH((flow.endedAt||Date.now())-flow.startedAt); },1000);
+    renderFlow();
+  }
+
+  function closeFlow(){
+    $('flowView').classList.remove('open');
+    if(flowTick){ clearInterval(flowTick); flowTick=null; }
+    fvMode='step'; fvInc=null;
+  }
+
+  function railHTML(s){
+    const counts={};
+    const pr=s.progress||[];
+    s.steps.forEach((x,i)=>{ const p=x.phase; const st=pr[i]||{}; counts[p]=counts[p]||{total:0,done:0};
+      counts[p].total++; if(st.doneAt||st.skipped) counts[p].done++; });
+    const curP=(s.status==='running' && s.steps[s.currentIndex]) ? s.steps[s.currentIndex].phase : -1;
+    return PROG.phases.map((name,p)=>{
+      const c=counts[p]||{total:0,done:0};
+      const cls = (c.total>0 && c.done===c.total) ? 'done' : (p===curP? 'cur':'');
+      return '<div class="fv-node '+cls+'"><i></i>'+name+'</div>';
+    }).join('');
+  }
+
+  function renderFlow(){
+    if(!flow) return;
+    const s=flow;
+    $('fvTitle').textContent='陪练流程';
+    $('fvSub').textContent = s.patient+' · '+s.stageLabel+' · '+(s.status==='running'? ('第 '+(s.currentIndex+1)+' / '+s.total+' 步') : (s.status==='done'?'已完成':'已终止'));
+    $('fvRail').innerHTML=railHTML(s);
+    $('fvTimer').textContent=fmtClockH((s.endedAt||Date.now())-s.startedAt);
+
+    const main=$('fvMain'), foot=$('fvFoot');
+    main.scrollTop=0;
+
+    if(fvMode==='skip'){
+      const st=s.steps[s.currentIndex];
+      main.innerHTML='<div class="fv-card"><span class="fv-tag">跳过步骤</span>'+
+        '<div class="fv-title">'+esc(st.title)+'</div>'+
+        '<p class="fv-goal">跳过必须留下原因，家属和主管能看到。这一步没法完成，通常是因为患者状态不允许或环境不具备。</p>'+
+        '<textarea class="fv-inp" id="fvSkipNote" rows="4" maxlength="120" placeholder="例如：患者今早头晕，家属要求不做站立训练"></textarea>'+
+        '<p class="fv-inc-note">提示：跳过不等于可以随便略过，连续跳过会被要求在量表里说明。</p></div>';
+      foot.innerHTML='<button class="btn ghost" id="fvCancel">返回</button><button class="btn" id="fvSkipOk">确认跳过</button>';
+      $('fvCancel').onclick=()=>{ fvMode='step'; renderFlow(); };
+      $('fvSkipOk').onclick=async()=>{
+        const note=($('fvSkipNote').value||'').trim();
+        if(note.length<4) return toast('请写明跳过原因');
+        await postStep(st.key,'skip',note);
+      };
+      return;
+    }
+
+    if(fvMode==='incident'){
+      main.innerHTML='<div class="fv-card"><span class="fv-tag" style="background:var(--danger-soft);color:#a83f38">现场异常</span>'+
+        '<div class="fv-title">遇到了什么情况</div>'+
+        '<p class="fv-goal">先停下来，选一个最接近的，我再告诉你怎么处理。拿不准就按最严重的那条做。</p>'+
+        '<div class="fv-inc-grid">'+PROG.incidents.map(x=>
+          '<button class="fv-inc '+(x.severity==='high'?'high':'')+'" data-inc="'+x.type+'"><b>'+esc(x.title)+'</b>'+
+          '<span style="color:var(--dim);font-size:11px">'+esc(x.label)+'</span></button>').join('')+
+        '</div></div>';
+      foot.innerHTML='<button class="btn ghost" id="fvCancel">返回流程</button>';
+      $('fvCancel').onclick=()=>{ fvMode='step'; renderFlow(); };
+      main.querySelectorAll('[data-inc]').forEach(b=>b.onclick=()=>{ fvInc=b.dataset.inc; fvMode='inc-detail'; renderFlow(); });
+      return;
+    }
+
+    if(fvMode==='inc-detail'){
+      const x=PROG.incidents.find(i=>i.type===fvInc)||PROG.incidents[0];
+      main.innerHTML='<div class="fv-card">'+
+        '<span class="fv-tag" style="background:'+(x.severity==='high'?'var(--danger-soft);color:#a83f38':'var(--warn-soft);color:#8a5b0c')+'">'+(x.severity==='high'?'高危 · 优先处理':'需要处理')+'</span>'+
+        '<div class="fv-title">'+esc(x.title)+'</div>'+
+        '<div class="fv-sec"><h4>现在该做</h4>'+x.dos.map(t=>'<div class="fv-item ok"><i>✓</i><span>'+esc(t)+'</span></div>').join('')+'</div>'+
+        '<div class="fv-sec"><h4>千万不要</h4>'+x.donts.map(t=>'<div class="fv-item no"><i>✕</i><span>'+esc(t)+'</span></div>').join('')+'</div>'+
+        '<div class="fv-call">'+esc(x.label)+'</div>'+
+        '<p class="fv-inc-note">'+esc(x.note)+'</p>'+
+        '<textarea class="fv-inp" id="fvIncNote" rows="3" maxlength="160" placeholder="现场情况补充（选填）：当时在做什么、患者原话、量到的数值"></textarea>'+
+        '</div>';
+      foot.innerHTML='<button class="btn ghost" id="fvCancel">返回</button>'+
+        '<button class="btn" id="fvIncOk">记录并继续</button>'+
+        '<button class="btn danger" id="fvIncEnd">记录并终止</button>';
+      $('fvCancel').onclick=()=>{ fvMode='incident'; renderFlow(); };
+      $('fvIncOk').onclick=()=>recordIncident(false);
+      $('fvIncEnd').onclick=()=>recordIncident(true);
+      return;
+    }
+
+    if(fvMode==='abort'){
+      main.innerHTML='<div class="fv-card"><span class="fv-tag" style="background:var(--danger-soft);color:#a83f38">提前终止</span>'+
+        '<div class="fv-title">终止本次陪练</div>'+
+        '<p class="fv-goal">终止会通知家属并记为一条预警。写清楚原因，后面复盘用得上。</p>'+
+        '<textarea class="fv-inp" id="fvAbortNote" rows="4" maxlength="160" placeholder="例如：患者站起时头晕明显，家属要求今天不做训练"></textarea></div>';
+      foot.innerHTML='<button class="btn ghost" id="fvCancel">返回流程</button><button class="btn danger" id="fvAbortOk">确认终止</button>';
+      $('fvCancel').onclick=()=>{ fvMode='step'; renderFlow(); };
+      $('fvAbortOk').onclick=async()=>{
+        const r=($('fvAbortNote').value||'').trim();
+        if(r.length<4) return toast('请写明终止原因');
+        const {status,data}=await api('/api/session/abort',{sessionId:flow.id, reason:r});
+        if(status!==200||!data.ok) return toast(data.err||'操作失败');
+        flow=data.session; fvMode='summary'; await loadSessions(); renderFlowPane(); renderFlow();
+        toast('已终止并记录');
+      };
+      return;
+    }
+
+    if(s.status!=='running'){
+      const pr=s.progress||[];
+      const done=pr.filter(x=>x.doneAt).length, skip=pr.filter(x=>x.skipped).length;
+      const incs=s.incidents||[];
+      main.innerHTML='<div class="fv-card"><span class="fv-tag">'+(s.status==='done'?'本次流程已完成':'本次流程已终止')+'</span>'+
+        '<div class="fv-title">'+esc(s.patient)+' · '+esc(s.stageLabel)+'</div>'+
+        '<div class="kv"><span>用时</span><span>'+fmtClockH((s.endedAt||Date.now())-s.startedAt)+'</span></div>'+
+        '<div class="kv"><span>完成 / 跳过</span><span>'+done+' 步 / '+skip+' 步</span></div>'+
+        '<div class="kv"><span>记录异常</span><span>'+(incs.length? incs.map(i=>esc(i.title)).join('、') : '无')+'</span></div>'+
+        '<div class="fv-sec" style="margin-top:16px"><h4>执行明细</h4>'+s.steps.map((x,i)=>{
+          const p2=pr[i]||{};
+          return '<div class="kv"><span>'+esc(x.title)+'</span><span>'+(p2.doneAt? '已完成' : (p2.skipped? '跳过：'+esc(p2.reason):'未执行'))+'</span></div>';
+        }).join('')+
+        '</div></div>';
+      foot.innerHTML='<button class="btn" id="fvClose">关闭</button>';
+      $('fvClose').onclick=closeFlow;
+      return;
+    }
+
+    // 正常步骤
+    const idx=s.currentIndex, st=s.steps[idx];
+    const isLast=(st.key==='scale');
+    if(isLast) return renderScaleStep(st, s);
+
+    main.innerHTML='<div class="fv-card">'+
+      '<span class="fv-tag">'+esc(st.phaseLabel)+' · 建议 '+st.minutes+' 分钟 · 第 '+(idx+1)+' / '+s.total+' 步</span>'+
+      '<div class="fv-title">'+esc(st.title)+'</div>'+
+      '<div class="fv-goal">'+esc(st.goal)+'</div>'+
+      (st.cues.length? '<div class="fv-sec"><h4>怎么做</h4>'+st.cues.map(t=>'<div class="fv-item ok"><i>✓</i><span>'+esc(t)+'</span></div>').join('')+'</div>':'')+
+      (st.donts.length? '<div class="fv-sec"><h4>不能做</h4>'+st.donts.map(t=>'<div class="fv-item no"><i>✕</i><span>'+esc(t)+'</span></div>').join('')+'</div>':'')+
+      (st.stops.length? '<div class="fv-stopbox"><h4>出现这些就停</h4>'+st.stops.map(t=>'<p>'+esc(t)+'</p>').join('')+'</div>':'')+
+      ((s.incidents&&s.incidents.length)? '<p class="fv-inc-note">本次已记录 '+(s.incidents.length)+' 条异常：'+esc(s.incidents.map(i=>i.title).join('、'))+'</p>':'')+
+      '<button class="fv-abort" id="fvAbort">提前终止本次陪练</button>'+
+      '</div>';
+
+    foot.innerHTML='<button class="btn ghost" id="fvIncBtn" style="flex:0 0 82px">遇到问题</button>'+
+      '<button class="btn ghost" id="fvSkipBtn" style="flex:0 0 66px">跳过</button>'+
+      '<button class="btn" id="fvDoneBtn">完成本步</button>';
+
+    $('fvDoneBtn').onclick=()=>postStep(st.key,'done');
+    $('fvSkipBtn').onclick=()=>{ fvMode='skip'; renderFlow(); };
+    $('fvIncBtn').onclick=()=>{ fvMode='incident'; renderFlow(); };
+    $('fvAbort').onclick=()=>{ fvMode='abort'; renderFlow(); };
+  }
+
+  function renderScaleStep(st, s){
+    const main=$('fvMain'), foot=$('fvFoot');
+    main.innerHTML='<div class="fv-card"><span class="fv-tag">'+esc(st.phaseLabel)+' · 最后一步</span>'+
+      '<div class="fv-title">'+esc(st.title)+'</div>'+
+      '<div class="fv-goal">'+esc(st.goal)+'</div>'+
+      '<div class="slider-row" style="margin-top:14px"><div class="lab"><span>疼痛评分 VAS</span><span class="val" id="fvVasVal">3</span></div>'+
+      '<input type="range" id="fvVas" min="0" max="10" step="1" value="3"><div style="display:flex;justify-content:space-between;font-size:10.5px;color:#8b9a97"><span>0 无痛</span><span>10 剧痛</span></div></div>'+
+      '<div class="slider-row"><div class="lab"><span>训练完成度</span><span class="val" id="fvCompVal">80</span></div>'+
+      '<input type="range" id="fvComp" min="0" max="100" step="5" value="80"><div style="display:flex;justify-content:space-between;font-size:10.5px;color:#8b9a97"><span>0 未完成</span><span>100 全部完成</span></div></div>'+
+      '<div class="slider-row"><div class="lab"><span>肌力等级 MMT</span><span class="val" id="fvMmtVal">3</span></div>'+
+      '<input type="range" id="fvMmt" min="0" max="5" step="1" value="3"><div style="display:flex;justify-content:space-between;font-size:10.5px;color:#8b9a97"><span>0 无收缩</span><span>5 正常</span></div></div>'+
+      '<div class="slider-row"><div class="lab"><span>疲劳程度</span><span class="val" id="fvFatVal">3</span></div>'+
+      '<input type="range" id="fvFat" min="0" max="10" step="1" value="3"><div style="display:flex;justify-content:space-between;font-size:10.5px;color:#8b9a97"><span>0 轻松</span><span>10 极度疲劳</span></div></div>'+
+      '<div class="switch-line" style="margin:12px 0 8px"><div style="font-size:13px">今天出现过异常</div><label class="toggle"><input type="checkbox" id="fvAbn"><span class="slider"></span></label></div>'+
+      '<textarea class="fv-inp" id="fvScaleNote" rows="3" maxlength="200" placeholder="补充说明（勾选异常必填）：什么时间、做了什么、怎么处理的"></textarea>'+
+      '<p class="err" id="fvErr"></p></div>';
+    foot.innerHTML='<button class="btn ghost" id="fvIncBtn2" style="flex:0 0 82px">遇到问题</button>'+
+      '<button class="btn" id="fvFinish">提交并结束</button>';
+    [['fvVas','fvVasVal'],['fvComp','fvCompVal'],['fvMmt','fvMmtVal'],['fvFat','fvFatVal']].forEach(([a,b])=>{
+      const el=$(a), lab=$(b); if(el&&lab) el.oninput=()=>{ lab.textContent=el.value; };
+    });
+    $('fvIncBtn2').onclick=()=>{ fvMode='incident'; renderFlow(); };
+    $('fvFinish').onclick=async()=>{
+      const vas=+$('fvVas').value, completion=+$('fvComp').value, mmt=+$('fvMmt').value, fatigue=+$('fvFat').value;
+      const abnormal=$('fvAbn').checked, note=($('fvScaleNote').value||'').trim();
+      if(abnormal && note.length<4){ $('fvErr').textContent='勾选了异常，请写清情况'; return; }
+      const btn=$('fvFinish'); btn.disabled=true; btn.textContent='提交中…';
+      const {status,data}=await api('/api/session/finish',{sessionId:flow.id, scale:{vas,completion,mmt,fatigue,abnormal,note}});
+      btn.disabled=false; btn.textContent='提交并结束';
+      if(status!==200||!data.ok){ $('fvErr').textContent=data.err||'提交失败'; return; }
+      flow=data.session; fvMode='summary';
+      await loadSessions(); renderFlowPane(); renderFlow();
+      toast('本次陪练已记录，家属可见');
+      refresh();
+    };
+  }
+
+  async function postStep(key, action, note){
+    const {status,data}=await api('/api/session/step',{sessionId:flow.id, stepKey:key, action, note:note||''});
+    if(status!==200||!data.ok){ toast(data.err||'操作失败'); return; }
+    flow=data.session; fvMode='step';
+    await loadSessions(); renderFlowPane(); renderFlow();
+    if(action==='done'){ const prev=data.session.steps[(data.session.currentIndex||1)-1]; toast('已完成：'+((prev&&prev.title)||'')); }
+  }
+
+  async function recordIncident(endNow){
+    const x=PROG.incidents.find(i=>i.type===fvInc);
+    const note=($('fvIncNote').value||'').trim();
+    const {status,data}=await api('/api/session/incident',{sessionId:flow.id, type:fvInc, note});
+    if(status!==200||!data.ok) return toast(data.err||'记录失败');
+    flow=data.session;
+    if(endNow){
+      const {status:st2,data:d2}=await api('/api/session/abort',{sessionId:flow.id, reason:'现场异常：'+(x?x.title:fvInc)+(note?('，'+note):'')});
+      if(st2===200&&d2.ok) flow=d2.session;
+      fvMode='summary';
+    }else{
+      fvMode='step';
+      toast('已记录：'+(x?x.title:''));
+    }
+    await loadSessions(); renderFlowPane(); renderFlow();
+  }
+
+  /* ---------- 渲染 ---------- */
+  function metric(v, k){
+    return '<div class="metric"><div class="v">'+v+'</div><div class="k">'+k+'</div></div>';
+  }
+
+  function renderHero(snap){
+    const now=new Date();
+    const pad=n=>String(n).padStart(2,'0');
+    const dayKey=now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate());
+    if(snap.role==='patient'||snap.role==='family'){
+      const hd=$('pHeroDate'); if(hd) hd.textContent=(now.getMonth()+1)+'月'+now.getDate()+'日';
+      const box=$('pHeroMetrics'); if(!box) return;
+      const scales=snap.scales||[];
+      const todayCount=scales.filter(s=>String(s.date||'').slice(0,10)===dayKey).length;
+      const act=(snap.active||[]).length;
+      const last=scales[0];
+      box.innerHTML = metric(act, '进行中预约') + metric(todayCount, '今日记录')
+        + metric(last? (last.vas!=null? last.vas : '—') : '—', '最近疼痛分');
+    }else{
+      const box=$('sHeroMetrics'); if(!box) return;
+      const pend=(snap.pendingList||[]).length;
+      const act=(snap.activeList||[]).length;
+      const done=(snap.history||[]).filter(b=>b.status==='completed').length;
+      box.innerHTML = metric(pend, '待确认') + metric(act, '进行中') + metric(done, '累计完成');
+      const st=$('sHeroState');
+      if(st) st.textContent = (snap.profile && snap.profile.online) ? '在线接单中' : '当前离线';
+    }
+  }
+
+  function render(){
+    if(!snap) return;
+    if(snap.role==='admin'){ renderAdmin(); return; }
+    try{ renderHero(snap); }catch(e){ console.warn('hero',e); }
+    if(snap.role==='patient' || snap.role==='family'){
+      if(snap.role==='family'){
+        $('meName').textContent = (me&&me.user)||'家属';
+        $('avatar').textContent = '家';
+        $('meRole').textContent = snap.linkedPatient? ('家属 · 照看 '+snap.linkedPatient) : '家属 · 未绑定患者';
+        if(!snap.linkedPatient && !bindAutoShown){ bindAutoShown=true; openBind(); }
+      }
+      $('patientBookingList').innerHTML = (snap.active&&snap.active.length)
+        ? snap.active.map(b=>bookingCard(b, snap.role==='family'?'patient':'patient')).join('')
+        : '<div class="empty">暂无进行中的预约</div>';
+
+      renderScales(snap.scales||[]);
+      renderProfile(snap.patientProfile || null);
+      renderToolboxAssess(snap.assessments || []);
+      renderAlerts(snap.alerts || []);
+      renderInvite(snap);
+      if(snap.history&&snap.history.length){
+        $('patientBookings').classList.remove('hidden');
+      }
+    }else{
+      me.profile=snap.profile;
+      $('onlineToggle').checked=!!snap.profile.online;
+      renderOnlinePill();
+
+      $('pendingCount').textContent=(snap.pendingList?snap.pendingList.length:0)+' 单';
+      $('pendingList').innerHTML=(snap.pendingList&&snap.pendingList.length)
+        ? snap.pendingList.map(b=>bookingCard(b,'sup')).join('')
+        : '<div class="empty">暂无待确认预约</div>';
+
+      $('activeList').innerHTML=(snap.activeList&&snap.activeList.length)
+        ? snap.activeList.map(b=>bookingCard(b,'sup')).join('')
+        : '<div class="empty">暂无进行中的服务</div>';
+
+      const pats=snap.patients||[];
+      const sel=$('patientSel');
+      const cur=sel.value;
+      sel.innerHTML = pats.length? pats.map(p=>'<option>'+esc(p)+'</option>').join('') : '<option value="">暂无患者</option>';
+      if(cur&&pats.includes(cur)) sel.value=cur;
+
+      $('historyList').innerHTML=(snap.history&&snap.history.length)
+        ? snap.history.map(b=>'<div class="kv"><span>'+esc(b.date)+' · '+esc(b.patient)+'</span><span>'+statusBadge(b.status)+'</span></div>').join('')
+        : '<div class="empty">还没有服务记录</div>';
+
+      renderVerify();
+      renderFlowPane();
+
+      const pats2=snap.patients||[];
+      const ap=$('assessPatient');
+      const cur2=ap.value;
+      ap.innerHTML = pats2.length? pats2.map(p=>'<option>'+esc(p)+'</option>').join('') : '<option value="">暂无患者</option>';
+      if(cur2&&pats2.includes(cur2)) ap.value=cur2;
+      renderPatientBrief();
+
+      const recent=(snap.assessments||[]).slice(0,5);      $('assessRecent').innerHTML = recent.length
+        ? recent.map(a=>{
+            const def = tb && tb.scales ? tb.scales.find(s=>s.key===a.type) : null;
+            const nm = def? def.short : a.type;
+            return '<div class="kv"><span>'+esc(a.date)+' · '+esc(a.patient)+' · '+esc(nm)+'</span><span>'+assessSummary(a,def)+'</span></div>';
+          }).join('')
+        : '<div class="empty">还没有评估记录</div>';
+    }
+  }
+
+  /* ---------- 量表趋势 ---------- */
+  function renderScales(list){
+    $('scaleCount').textContent = list.length? '最近 '+list.length+' 次' : '';
+    if(!list.length){
+      $('chartBox').innerHTML='<div class="empty">还没有量表记录</div>';
+      $('scaleTable').innerHTML='';
+      return;
+    }
+    const pts=[...list].reverse(); // 时间正序
+    const W=300,H=120,pad=18;
+    const x=i=> pad + (pts.length===1? (W-2*pad)/2 : i*(W-2*pad)/(pts.length-1));
+    const yVas=v=> H-pad - (v/10)*(H-2*pad);
+    const yComp=v=> H-pad - (v/100)*(H-2*pad);
+
+    const vasLine=pts.map((s,i)=>x(i)+','+yVas(s.vas)).join(' ');
+    const compLine=pts.map((s,i)=>x(i)+','+yComp(s.completion)).join(' ');
+    const vasDots=pts.map((s,i)=>'<circle cx="'+x(i)+'" cy="'+yVas(s.vas)+'" r="2.5" fill="#c07d18"/>').join('');
+    const compDots=pts.map((s,i)=>'<circle cx="'+x(i)+'" cy="'+yComp(s.completion)+'" r="2.5" fill="#0e9f8e"/>').join('');
+
+    $('chartBox').innerHTML='<svg class="chart" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none">'+
+      '<polyline points="'+vasLine+'" fill="none" stroke="#c07d18" stroke-width="2" stroke-linejoin="round"/>'+
+      '<polyline points="'+compLine+'" fill="none" stroke="#0e9f8e" stroke-width="2" stroke-linejoin="round"/>'+
+      vasDots+compDots+
+      '</svg>';
+
+    $('scaleTable').innerHTML = list.slice(0,8).map(s=>
+      '<div class="scale-row"><span class="d">'+esc(s.date)+'</span>'+
+      '<span>VAS '+s.vas+' · 完成 '+s.completion+'% · 肌力 '+s.mmt+' · 疲劳 '+s.fatigue+
+      (s.abnormal?' · <b style="color:#d9564f">异常</b>':'')+'</span></div>'
+    ).join('');
+  }
+
+  /* ---------- 训练方案参考 ---------- */
+  const STAGE_PLANS = [
+    {
+      title: 'Ⅰ-Ⅱ 期 · 卧床 / 联合反应期',
+      goal: '维持关节活动度、预防压疮与僵硬、建立基础动作',
+      items: [
+        '良肢位摆放：仰卧肩下垫枕、患侧卧、健侧卧轮换，每 2 小时翻身一次',
+        '被动关节活动：肩、肘、腕、髋、膝、踝各方向 10 次/组，每日 2 组，全程在无痛范围内',
+        '健侧肢体主动活动 + 患侧助力活动，防止健侧废用',
+        '床上双桥（抬臀）：抬起保持 5 秒，10 次/组',
+        '呼吸训练、翻身训练（辅助完成）',
+        '避免过度牵拉患侧肩关节，防止肩痛与半脱位',
+      ],
+    },
+    {
+      title: 'Ⅲ 期 · 共同运动期',
+      goal: '打破共同运动模式，诱发分离运动与躯干控制',
+      items: [
+        'Bobath 握手（双手交叉）前伸、上举，坐位完成 10 次/组',
+        '患侧肘支撑（坐位/侧卧位），逐步延长支撑时间',
+        '患手触肩、触口、触对侧膝，各 8 次',
+        '坐位到站立转移训练（辅助 → 独立），注意双脚平放',
+        '患腿负重站立（扶支持面），从 30 秒逐步延长',
+        '坐位躯干前倾、侧屈控制训练',
+      ],
+    },
+    {
+      title: 'Ⅳ-Ⅴ 期 · 分离运动期',
+      goal: '分离运动精细化、站立平衡、步行准备',
+      items: [
+        '坐位屈肘、前臂旋前旋后、腕背伸，各 10 次/组',
+        '手功能：木钉 / 积木抓放、捏取小物，10 分钟',
+        '站立重心转移（左右、前后），扶支持面 → 无支撑',
+        '单腿支撑（患腿）从 5 秒逐步到 15 秒，需有人保护',
+        '原地踏步、迈步分解（患腿先迈 / 健腿先迈交替）',
+        '上下台阶训练（10 cm 台阶起步）',
+      ],
+    },
+    {
+      title: 'Ⅵ 期 · 接近正常期',
+      goal: '功能强化、复杂步行、回归日常生活',
+      items: [
+        '抗阻训练（弹力带）：上肢推拉、下肢伸屈，2-3 组 × 12 次',
+        '精细手功能：系扣、捡豆子、写字、使用餐具',
+        '复杂步行：转身、跨越障碍、变速行走、坡道',
+        'ADL 训练：穿衣（先患侧后健侧）、洗漱、简单备餐',
+        '耐力训练：连续步行 10-20 分钟，监测心率与疲劳',
+        '平衡进阶： tandem 站立、闭眼站立（需全程保护）',
+      ],
+    },
+  ];
+
+  function renderStagePlan(idx) {
+    const p = STAGE_PLANS[idx] || STAGE_PLANS[0];
+    $('stageBody').innerHTML =
+      '<div style="color:#12211f;font-size:13px;margin-bottom:6px">' + esc(p.title) + '</div>' +
+      '<div style="margin-bottom:8px">目标：' + esc(p.goal) + '</div>' +
+      '<ol style="margin:0;padding-left:18px">' + p.items.map(i => '<li style="margin-bottom:4px">' + esc(i) + '</li>').join('') + '</ol>';
+  }
+
+  /* ---------- 页签 ---------- */
+  function setView(v){ document.body.dataset.view = v; }
+  function bindTabs(barId){
+    const bar=$(barId); if(!bar) return;
+    bar.querySelectorAll('.tab').forEach(b=>{
+      b.onclick=()=>{
+        setView(b.dataset.view);
+        bar.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x===b));
+      };
+    });
+  }
+
+  function buildToolCards(){
+    const box=$('toolCards'); if(!box) return;
+    box.innerHTML = meta.toolbox.map(t=>
+      '<div class="tool-card" data-type="'+t.key+'">'+
+        '<b>'+esc(t.name)+'</b>'+
+        '<small>'+esc(t.desc)+' · '+t.itemCount+' 项</small>'+
+      '</div>').join('');
+    box.querySelectorAll('.tool-card').forEach(c=>{
+      c.onclick=()=>openAssess(c.dataset.type);
+    });
+  }
+
+  function renderPatientBrief(){
+    setTimeout(()=>{ if($('supReports')) renderSupReports($('assessPatient').value); },0);
+    const p=$('assessPatient').value;
+    const prof = snap && snap.patientProfiles ? snap.patientProfiles[p] : null;
+    if(!p){ $('patientBrief').textContent='—'; return; }
+    if(!prof){ $('patientBrief').textContent='该患者尚未填写卒中档案（可让患者在「卒中档案」页填写）'; return; }
+    const parts=[prof.strokeType, prof.side, prof.onsetDate?('发病 '+prof.onsetDate):'', (prof.deficits||[]).join('、')].filter(Boolean);
+    $('patientBrief').textContent = parts.length? parts.join(' · ') : '档案已建立但信息为空';
+  }
+
+  /* ---------- 卒中档案 / 工具箱 ---------- */
+  let tb = null;
+  let profileDirty = false;
+  let familyMode = false;
+  let weeklyText = '';
+  let bindAutoShown = false;
+  async function loadToolbox() {
+    if (tb) return tb;
+    const { data } = await api('/api/toolbox/meta');
+    if (data && data.ok) tb = data;
+    return tb;
+  }
+
+  function buildProfileUI() {
+    const m = meta;
+    const cond = $('conditionSel');
+    const buildCond = function(kw){
+      const k = String(kw || '').trim();
+      const groups = (m.conditions || []).map(g => ({
+        group: g.group,
+        items: k ? g.items.filter(x => x.indexOf(k) >= 0) : g.items,
+      })).filter(g => g.items.length);
+      const cur = cond.value;
+      cond.innerHTML = '<option value="">选择病种 / 诊断</option>' +
+        groups.map(g => '<optgroup label="' + esc(g.group) + '">' +
+          g.items.map(t => '<option' + (t === cur ? ' selected' : '') + '>' + esc(t) + '</option>').join('') +
+          '</optgroup>').join('');
+      if (!groups.length) cond.innerHTML = '<option value="">没有匹配的病种，换个词试试</option>';
+    };
+    buildCond('');
+    $('condFilter').oninput = () => { buildCond($('condFilter').value); profileDirty = true; };
+    $('sideSel').innerHTML = '<option value="">偏瘫侧 / 患侧</option>' + m.strokeSides.map(t => '<option>' + t + '</option>').join('');
+
+    const cc = $('concernChips'); cc.innerHTML = '';
+    (m.concerns || []).forEach(t => {
+      const b = document.createElement('button');
+      b.className = 'chip'; b.textContent = t; b.dataset.c = t;
+      b.onclick = () => { b.classList.toggle('active'); profileDirty = true; };
+      cc.appendChild(b);
+    });
+
+    const chips = $('deficitChips'); chips.innerHTML = '';
+    m.deficits.forEach(d => {
+      const b = document.createElement('button');
+      b.className = 'chip'; b.textContent = d; b.dataset.d = d;
+      b.onclick = () => { b.classList.toggle('active'); profileDirty = true; };
+      chips.appendChild(b);
+    });
+    ['conditionSel','sideSel','onsetDate','profileNote','concernOther'].forEach(id => {
+      const el = $(id); if (!el) return;
+      el.oninput = () => { profileDirty = true; };
+      el.onchange = () => { profileDirty = true; };
+    });
+    $('conditionSel').onchange = () => { profileDirty = true; markNeuroHint(); };
+    $('toolboxType').innerHTML = m.toolbox.map(t => '<option value="' + t.key + '">' + t.name + ' · ' + t.short + '</option>').join('');
+    $('saveProfile').onclick = saveProfile;
+
+    if (familyMode) {
+      $('saveProfile').style.display = 'none';
+      ['strokeType', 'sideSel', 'onsetDate', 'profileNote'].forEach(id => {
+        $(id).disabled = true;
+        $(id).classList.add('field-disabled');
+      });
+    }
+
+    // 提醒 / 周报
+    $('weeklyBtn').onclick = openWeekly;
+    $('wClose').onclick = closeWeekly;
+    $('wmask').onclick = closeWeekly;
+    $('wCopy').onclick = copyWeekly;
+    $('wPrint').onclick = printWeekly;
+    $('bindBtn').onclick = doBind;
+    $('bClose').onclick = closeBind;
+    $('bmask').onclick = closeBind;
+  }
+
+
+  /* ---------- 诊断报告 ---------- */
+  let reportCache = {};
+
+  function fmtSize(n){
+    if(!n) return '';
+    if(n < 1024) return n + ' B';
+    if(n < 1024*1024) return (n/1024).toFixed(n<10240?1:0) + ' KB';
+    return (n/1048576).toFixed(1) + ' MB';
+  }
+
+  function reportRow(r, allowDel){
+    const ext = (r.mime||'').indexOf('pdf')>=0 ? 'PDF' : (r.mime||'').indexOf('png')>=0 ? 'PNG' : 'JPG';
+    return '<div class="rep"><div class="ic">'+ext+'</div>'+
+      '<div class="mid"><b>'+esc(r.name||'诊断报告')+'</b><span>'+esc(fmtDay(r.createdAt))+' · '+fmtSize(r.size)+'</span></div>'+
+      '<div class="ops"><button data-rep-view="'+r.id+'">查看</button>'+
+      (allowDel? '<button class="del" data-rep-del="'+r.id+'">删除</button>':'')+'</div></div>';
+  }
+
+  async function loadReports(patient){
+    const q='/api/patient/reports'+(patient?('?patient='+encodeURIComponent(patient)):'');
+    const {status,data}=await api(q);
+    const list=(status===200&&data.ok)?data.reports:[];
+    if(patient) reportCache[patient]=list; else reportCache.self=list;
+    return list;
+  }
+
+  function renderPatientReports(list){
+    const box=$('reportList'); if(!box) return;
+    $('reportCount').textContent = list.length? list.length+' 份' : '';
+    box.innerHTML = list.length? list.map(r=>reportRow(r,true)).join('')
+      : '<div class="empty">还没有上传报告，建议拍一张出院小结或诊断证明</div>';
+  }
+
+  async function refreshPatientReports(){
+    const list=await loadReports();
+    renderPatientReports(list);
+  }
+
+  $('reportPick').onclick=()=>$('reportFile').click();
+  $('reportFile').onchange=async(e)=>{
+    const f=e.target.files && e.target.files[0];
+    if(!f) return;
+    const ok=['image/jpeg','image/png','image/webp','image/heic','application/pdf'];
+    if(!ok.includes(f.type)){ toast('仅支持 JPG / PNG / WebP / HEIC / PDF'); e.target.value=''; return; }
+    if(f.size > 12*1024*1024){ toast('文件超过 12MB，请压缩后再传'); e.target.value=''; return; }
+    toast('上传中…');
+    const res=await fetch('/rehab/api/patient/report/upload?name='+encodeURIComponent(f.name||'诊断报告'),
+      {method:'POST',credentials:'same-origin',headers:{'Content-Type':f.type},body:f});
+    let d={}; try{ d=await res.json(); }catch(err){}
+    e.target.value='';
+    if(res.status!==200||!d.ok){ toast(d.err||'上传失败'); return; }
+    toast('已上传，只有你和接单监督者能看到');
+    refreshPatientReports();
+  };
+
+  $('reportList').addEventListener('click', async (e)=>{
+    const v=e.target.closest('[data-rep-view]');
+    if(v){ const list=(reportCache.self||[]).find(r=>r.id===v.dataset.repView);
+      if(list) window.open(list.url,'_blank'); return; }
+    const d=e.target.closest('[data-rep-del]');
+    if(d){
+      if(!confirm('删除这份报告？删除后不能恢复')) return;
+      const {status,data}=await api('/api/report/delete',{id:d.dataset.repDel});
+      if(status!==200||!data.ok) return toast(data.err||'删除失败');
+      toast('已删除'); refreshPatientReports();
+    }
+  });
+
+  /* ---------- 监督者查看报告 ---------- */
+  let supReportPatient='', supReportList=[];
+
+  async function renderSupReports(patient){
+    const box=$('supReports'); if(!box) return;
+    if(!patient){ box.innerHTML=''; return; }
+    if(patient!==supReportPatient){ supReportPatient=patient; supReportList=await loadReports(patient); }
+    const n=supReportList.length;
+    box.innerHTML = n
+      ? '<button class="btn ghost sm" id="supRepOpen">查看诊断报告（'+n+' 份）</button>'
+      : '<p style="font-size:11.5px;color:var(--dim)">该患者还没上传诊断报告</p>';
+    const b=$('supRepOpen');
+    if(b) b.onclick=()=>{
+      $('rTitle').textContent = patient+' · 诊断报告';
+      $('rList').innerHTML = supReportList.map(r=>reportRow(r,false)).join('');
+      $('rmask').classList.add('open'); $('rsheet').classList.add('open');
+    };
+  }
+
+  $('rClose').onclick=()=>{ $('rmask').classList.remove('open'); $('rsheet').classList.remove('open'); };
+  $('rmask').onclick=()=>$('rClose').onclick();
+  $('rList').addEventListener('click',(e)=>{
+    const v=e.target.closest('[data-rep-view]');
+    if(!v) return;
+    const r=supReportList.find(x=>x.id===v.dataset.repView);
+    if(r) window.open(r.url,'_blank');
+  });
+
+  function renderProfile(p) {
+    if (profileDirty) return;
+    if (!p) { $('profileStatus').textContent = '未填写'; return; }
+    $('profileStatus').textContent = '已建立';
+    if (p.condition) $('conditionSel').value = p.condition;
+    if (p.side) $('sideSel').value = p.side;
+    if (p.onsetDate) $('onsetDate').value = p.onsetDate;
+    $('profileNote').value = p.note || '';
+    const known = (meta.concerns || []);
+    const extra = (p.concerns || []).filter(c => !known.includes(c));
+    $('concernOther').value = extra[0] || '';
+    [...$('concernChips').querySelectorAll('.chip')].forEach(b => {
+      b.classList.toggle('active', (p.concerns || []).includes(b.dataset.c));
+    });
+    [...$('deficitChips').querySelectorAll('.chip')].forEach(b => {
+      b.classList.toggle('active', (p.deficits || []).includes(b.dataset.d));
+    });
+    markNeuroHint();
+    // 主诉同步到预约页，下次预约默认勾上
+    me.profile = me.profile || {};
+    me.profile.concerns = p.concerns || [];
+    if ($('focusChips') && $('focusChips')._fill) $('focusChips')._fill();
+  }
+
+  function isNeuroCondition(c) {
+    return (meta.neuroConditions || []).includes(c);
+  }
+
+  function isBrunstromCondition(c) {
+    return (meta.brunstromConditions || []).includes(c);
+  }
+
+  function markNeuroHint() {
+    const hint = $('neuroHint');
+    if (!hint) return;
+    const c = $('conditionSel').value;
+    if (!c) { hint.textContent = ''; return; }
+    const map=(meta&&meta.conditionProgram)||{};
+    const pid=map[c]||(isBrunstromCondition(c)?'0':'g');
+    const names={'0':'Brunnstrom 分期','1':'Brunnstrom 分期','2':'Brunnstrom 分期','3':'Brunnstrom 分期',
+      'o':'骨科术后流程','c':'心肺流程','n':'神经流程','g':'通用流程'};
+    hint.textContent = '陪练默认使用：' + (names[pid]||'通用流程');
+  }
+
+  async function saveProfile() {
+    const picked = [...$('concernChips').querySelectorAll('.chip.active')].map(b => b.dataset.c);
+    const other = $('concernOther').value.trim();
+    const body = {
+      condition: $('conditionSel').value,
+      side: $('sideSel').value,
+      onsetDate: $('onsetDate').value,
+      concerns: (other ? picked.concat([other]) : picked).slice(0, 8),
+      deficits: [...$('deficitChips').querySelectorAll('.chip.active')].map(b => b.dataset.d),
+      note: $('profileNote').value.trim(),
+    };
+    const { status, data } = await api('/api/patient/profile', body);
+    if (status !== 200 || !data.ok) { toast(data.err || '保存失败'); return; }
+    profileDirty = false;
+    toast('康复档案已保存');
+    refresh();
+  }
+
+  function assessSummary(a, def) {
+    if (!def) return '';
+    if (def.score === 'sum' && def.totalMax) {
+      return '<b style="color:#0e9f8e">' + a.total + '</b> / ' + def.totalMax;
+    }
+    if (a.type === 'brunnstrom') {
+      const v = a.values;
+      return [(v.upper ? '上肢' + v.upper : ''), (v.hand ? '手' + v.hand : ''), (v.lower ? '下肢' + v.lower : '')].filter(Boolean).join(' · ');
+    }
+    if (a.type === 'ashworth') {
+      const n = Object.keys(a.values || {}).length;
+      const avg = n ? (Object.values(a.values).reduce((s, x) => s + x, 0) / n).toFixed(1) : '—';
+      return '记录 ' + n + ' 组，均值 ' + avg + ' 级';
+    }
+    return '';
+  }
+
+  function renderToolboxAssess(list) {
+    const type = $('toolboxType').value;
+    const pool = (list || []).filter(a => a.type === type);
+    $('assessCount').textContent = pool.length ? pool.length + ' 次记录' : '';
+    const def = tb && tb.scales ? tb.scales.find(s => s.key === type) : null;
+    if (!pool.length) {
+      $('toolboxChart').innerHTML = '<div class="empty">还没有该量表的记录</div>';
+      $('toolboxList').innerHTML = '';
+      return;
+    }
+
+    const asc = [...pool].reverse();
+    if (def && def.totalMax) {
+      const W = 300, H = 120, pad = 18;
+      const maxV = def.totalMax;
+      const x = i => pad + (asc.length === 1 ? (W - 2 * pad) / 2 : i * (W - 2 * pad) / (asc.length - 1));
+      const y = v => H - pad - (v / maxV) * (H - 2 * pad);
+      const line = asc.map((a, i) => x(i) + ',' + y(a.total)).join(' ');
+      const dots = asc.map((a, i) => '<circle cx="' + x(i) + '" cy="' + y(a.total) + '" r="2.5" fill="#0e9f8e"/>').join('');
+      $('toolboxChart').innerHTML = '<svg class="chart" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none">' +
+        '<polyline points="' + line + '" fill="none" stroke="#0e9f8e" stroke-width="2" stroke-linejoin="round"/>' + dots + '</svg>' +
+        '<div style="font-size:11px;color:#7b8b88;margin-bottom:6px">满分 ' + maxV + ' 分，最近一次 ' + pool[0].total + ' 分</div>';
+    } else {
+      $('toolboxChart').innerHTML = '';
+    }
+
+    $('toolboxList').innerHTML = pool.slice(0, 8).map(a =>
+      '<div class="scale-row"><span class="d">' + esc(a.date) + '</span><span>' + assessSummary(a, def) + (a.note ? ' · ' + esc(a.note.slice(0, 12)) : '') + '</span></div>'
+    ).join('');
+  }
+
+  /* ---------- 监督者：评估表单 ---------- */
+  let assessCtx = null, assessVals = {};
+
+  async function openAssess(type) {
+    const patient = $('assessPatient').value;
+    if (!patient) { toast('暂无患者，请先让患者预约或填写档案'); return; }
+    const t = await loadToolbox();
+    if (!t) { toast('工具箱加载失败'); return; }
+    const def = t.scales.find(s => s.key === type);
+    if (!def) return;
+
+    assessCtx = { patient, type, def };
+    assessVals = {};
+
+    $('aTitle').textContent = def.name;
+    $('aMeta').innerHTML = '<span>患者</span><span>' + esc(patient) + ' · ' + esc(meta.today) + '</span>';
+    $('aDesc').textContent = def.desc;
+
+    $('aItems').innerHTML = def.items.map(item =>
+      '<div class="item" data-key="' + item.k + '" style="margin-bottom:12px">' +
+      '<div style="font-size:13px;margin-bottom:6px">' + esc(item.label) + '</div>' +
+      '<div class="chips">' + item.opts.map(op =>
+        '<button class="chip" data-v="' + op.v + '">' + esc(op.l) + '</button>'
+      ).join('') + '</div></div>'
+    ).join('');
+
+    $('aItems').querySelectorAll('.item').forEach(rowEl => {
+      rowEl.querySelectorAll('.chip').forEach(btn => {
+        btn.onclick = () => {
+          const key = rowEl.dataset.key;
+          const v = Number(btn.dataset.v);
+          if (assessVals[key] === v) { delete assessVals[key]; rowEl.querySelectorAll('.chip').forEach(b => b.classList.remove('active')); }
+          else { assessVals[key] = v; rowEl.querySelectorAll('.chip').forEach(b => b.classList.remove('active')); btn.classList.add('active'); }
+          updateAssessTotal();
+        };
+      });
+    });
+
+    $('aNote').value = '';
+    $('aErr').textContent = '';
+    updateAssessTotal();
+    $('amask').classList.add('open'); $('asheet').classList.add('open');
+  }
+
+  function updateAssessTotal() {
+    const def = assessCtx.def;
+    const n = Object.keys(assessVals).length;
+    const total = Object.values(assessVals).reduce((s, v) => s + v, 0);
+    if (def.score === 'sum' && def.totalMax) {
+      $('aTotal').innerHTML = '<span>已完成 ' + n + '/' + def.items.length + ' 项</span><span>得分 <b style="color:#0e9f8e">' + total + '</b> / ' + def.totalMax + '</span>';
+    } else {
+      $('aTotal').innerHTML = '<span>已完成</span><span>' + n + '/' + def.items.length + ' 项</span>';
+    }
+  }
+
+  function closeAssess() { $('amask').classList.remove('open'); $('asheet').classList.remove('open'); }
+  $('amask').onclick = closeAssess; $('aClose').onclick = closeAssess;
+
+  $('aSubmit').onclick = async () => {
+    if (!assessCtx) return;
+    const err = $('aErr'); err.textContent = '';
+    if (!Object.keys(assessVals).length) { err.textContent = '请至少完成一半项目'; return; }
+    $('aSubmit').disabled = true;
+    const { status, data } = await api('/api/assessment', {
+      patient: assessCtx.patient, type: assessCtx.type,
+      values: assessVals, note: $('aNote').value.trim(),
+    });
+    $('aSubmit').disabled = false;
+    if (status !== 200 || !data.ok) { err.textContent = data.err || '提交失败'; return; }
+    closeAssess(); toast('评估已保存');
+    refresh();
+  };
+
+  /* ---------- 认证与培训 ---------- */
+  let coursesCache = null, courseCtx = null, courseAnswers = {};
+
+  async function loadCourses(){
+    if(coursesCache) return coursesCache;
+    const {data}=await api('/api/training/courses');
+    if(data && data.ok) coursesCache=data;
+    return coursesCache;
+  }
+
+  function renderVerify(){
+    const v=(snap&&snap.verify)||{status:'none'};
+    const t=(snap&&snap.training)||{completed:0,total:6,certified:false,passed:{}};
+    const qualified = v.status==='approved' && t.certified;
+    const pill=$('qualPill');
+    pill.className='pill '+(qualified?'on':'');
+    pill.innerHTML='<span class="dot"></span>'+(qualified?'可接单':(v.status==='pending'?'审核中':(v.status==='rejected'?'未通过':'未认证')));
+
+    const map={none:'尚未提交个人资料',pending:'资料已提交，等待管理员审核',approved:'资料已通过审核',rejected:'资料被驳回：'+(v.note||'未说明原因')};
+    $('qualBody').innerHTML=
+      '<div>审核状态：'+esc(map[v.status]||'未认证')+'</div>'+
+      (v.realName?('<div>姓名：'+esc(v.realName)+' · 证件 '+esc(v.idNoMasked||'')+' · 从业 '+(v.yearsExp||0)+' 年</div>'):'')+
+      (v.background?('<div>背景：'+esc(v.background)+'</div>'):'')+
+      '<div>培训进度：'+t.completed+' / '+t.total+' 门'+(t.certified?'（已结业）':'')+'</div>'+
+      '<div style="margin-top:6px;color:'+(qualified?'#0e9f8e':'#c07d18')+'">'+(qualified?'✅ 已具备上线接单资格':'⚠ 资料审核通过 + 培训结业后才能上线')+'</div>';
+
+    const form=$('credForm');
+    if(v.status==='approved'){ form.innerHTML=''; }
+    else{
+      form.innerHTML=
+        '<p class="block-title" style="margin:4px 0 8px"><b>'+(v.status==='rejected'?'修改并重新提交':'提交个人资料')+'</b></p>'+
+        '<input id="crName" class="field" placeholder="真实姓名" maxlength="10">'+
+        '<input id="crId" class="field" placeholder="身份证号（18 位）" maxlength="18">'+
+        '<input id="crYears" class="field" type="number" min="0" max="40" placeholder="相关从业年限（年）">'+
+        '<input id="crBg" class="field" placeholder="相关背景：护理 / 康复 / 照护 / 无" maxlength="120">'+
+        '<div class="switch-line" style="margin:8px 0"><div style="font-size:13px">持有有效健康证</div><label class="toggle"><input type="checkbox" id="crHealth"><span class="slider"></span></label></div>'+
+        '<div class="switch-line" style="margin:8px 0"><div style="font-size:13px">无犯罪记录（自行承诺）</div><label class="toggle"><input type="checkbox" id="crNoRecord"><span class="slider"></span></label></div>'+
+        '<button class="btn sm" id="crSubmit">提交审核</button>'+
+        '<p class="err" id="crErr"></p>';
+      $('crSubmit').onclick=submitCredentials;
+    }
+
+    $('demoCert').style.display = (meta && meta.devMode) ? 'block' : 'none';
+    renderCourses(t);
+  }
+
+  async function submitCredentials(){
+    const err=$('crErr'); err.textContent='';
+    const body={
+      realName:($('crName').value||'').trim(),
+      idNo:($('crId').value||'').trim(),
+      yearsExp:Number($('crYears').value||0),
+      background:($('crBg').value||'').trim(),
+      healthCert:$('crHealth').checked,
+      noRecord:$('crNoRecord').checked,
+    };
+    $('crSubmit').disabled=true;
+    const {status,data}=await api('/api/supervisor/credentials',body);
+    $('crSubmit').disabled=false;
+    if(status!==200||!data.ok){ err.textContent=data.err||'提交失败'; return; }
+    toast('资料已提交，等待审核'); refresh();
+  }
+
+  function renderCourses(t){
+    const box=$('courseList'); if(!box) return;
+    if(!coursesCache){ box.innerHTML='<div class="empty">课程加载中…</div>'; loadCourses().then(()=>{ if(snap) renderVerify(); }); return; }
+    $('courseCount').textContent = t.completed+' / '+t.total;
+    box.innerHTML = coursesCache.courses.map(c=>{
+      const passed = t.passed && t.passed[c.id];
+      return '<div class="tool-card" data-course="'+c.id+'" style="margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:10px">'+
+        '<div><b>'+esc(c.title)+'</b><small>'+c.minutes+' 分钟 · '+c.questions.length+' 题测验'+((c.videos&&c.videos.length)?' · '+c.videos.length+' 个视频':'')+'</small></div>'+
+        '<span style="flex-shrink:0;font-size:11px;padding:3px 9px;border-radius:6px;border:1px solid '+(passed?'rgba(14,159,142,.5)':'var(--line)')+';color:'+(passed?'#0e9f8e':'#7b8b88')+'">'+(passed?('已通过 '+passed+'/3'):'未学习')+'</span>'+
+      '</div>';
+    }).join('');
+    box.querySelectorAll('[data-course]').forEach(el=>{ el.onclick=()=>openCourse(el.dataset.course); });
+  }
+
+  async function openCourse(id){
+    const c=await loadCourses(); if(!c) return;
+    const course=c.courses.find(x=>x.id===id); if(!course) return;
+    courseCtx=course; courseAnswers={};
+    $('cTitle').textContent=course.title;
+    $('cPoints').innerHTML='<div style="font-size:12px;color:#7b8b88;margin-bottom:8px">'+course.minutes+' 分钟 · 课程要点</div>'+
+      '<ol style="margin:0;padding-left:18px;font-size:13px;line-height:1.95;color:#3b4c48">'+course.points.map(p=>'<li style="margin-bottom:7px">'+esc(p)+'</li>').join('')+'</ol>';
+    $('cQuiz').innerHTML=course.questions.map((q,qi)=>
+      '<div class="q" data-q="'+qi+'" style="margin-bottom:12px">'+
+        '<div style="font-size:13px;margin-bottom:6px">'+(qi+1)+'. '+esc(q.q)+'</div>'+
+        '<div class="chips">'+q.opts.map((o,oi)=>'<button class="chip" data-o="'+oi+'">'+esc(o)+'</button>').join('')+'</div>'+
+      '</div>').join('');
+
+    renderCourseVideos(course);
+    const canUp = me && (me.role==='admin' || me.role==='supervisor');
+    $('cUploadWrap').classList.toggle('hidden', !canUp);
+    $('cFile').value=''; $('cVideoTitle').value='';
+    $('cProgWrap').classList.add('hidden'); $('cProgText').classList.add('hidden');
+    $('cProg').style.width='0';
+    $('cSubmit').disabled=false;
+    $('cQuiz').querySelectorAll('.q').forEach(qEl=>{
+      qEl.querySelectorAll('.chip').forEach(btn=>{
+        btn.onclick=()=>{
+          qEl.querySelectorAll('.chip').forEach(b=>b.classList.remove('active'));
+          btn.classList.add('active');
+          courseAnswers[Number(qEl.dataset.q)]=Number(btn.dataset.o);
+        };
+      });
+    });
+    $('cResult').textContent='';
+    $('cErr').textContent='';
+    $('cSubmit').disabled=false;
+    $('cSubmit').textContent='提交测验';
+    $('cmask').classList.add('open'); $('csheet').classList.add('open');
+  }
+
+  function closeCourse(){ $('cmask').classList.remove('open'); $('csheet').classList.remove('open'); }
+  $('cClose').onclick=closeCourse;
+  $('cmask').onclick=closeCourse;
+
+  /* ---------- 课程视频 ---------- */
+  function fmtSize(n){
+    if(n >= 1048576) return (n/1048576).toFixed(1)+' MB';
+    return Math.round(n/1024)+' KB';
+  }
+
+  function renderCourseVideos(course){
+    const box=$('cVideos'); if(!box) return;
+    const vs=course.videos||[];
+    const ready=vs.filter(v=>v.status==='ready');
+    const doneN=ready.filter(v=>v.done).length;
+    $('cVideoCount').textContent = vs.length ? (vs.length+' 个 · 已看完 '+doneN+'/'+ready.length) : '';
+
+    if(!vs.length){
+      box.innerHTML='<div class="empty" style="padding:12px 0">这门课还没有视频，可以上传一段示范供大家学习</div>';
+      updateGateHint(course);
+      return;
+    }
+
+    box.innerHTML = vs.map(v=>{
+      if(v.status==='processing'){
+        return '<div class="video-item"><div class="video-ph">转码中…处理完自动可播放</div>'+
+          '<div class="video-meta"><div><b>'+esc(v.title)+'</b><small>正在压缩成 H.264，通常十几秒</small></div></div></div>';
+      }
+      if(v.status==='failed'){
+        return '<div class="video-item"><div class="video-ph bad">视频处理失败</div>'+
+          '<div class="video-meta"><div><b>'+esc(v.title)+'</b><small>'+esc(v.err||'文件无法识别，请重新上传')+'</small></div>'+
+          (me.role==='admin' ? '<button class="video-del" data-vdel="'+v.id+'">删除</button>' : '')+'</div></div>';
+      }
+      return '<div class="video-item" data-vitem="'+v.id+'">'+
+        '<video controls preload="metadata" playsinline '+(v.poster?'poster="'+v.poster+'" ':'')+'src="'+v.url+'" data-vid="'+v.id+'"></video>'+
+        '<div class="video-meta">'+
+          '<div><b>'+esc(v.title)+'</b><small>'+fmtSize(v.size)+(v.duration?' · 时长 '+Math.round(v.duration)+' 秒':'')+' · '+esc(v.uploader)+' · '+new Date(v.uploadedAt).toLocaleDateString('zh-CN')+'</small></div>'+
+          '<div style="display:flex;gap:10px;flex-shrink:0;align-items:center">'+
+            '<span class="vw-chip '+(v.done?'ok':'')+'" data-vdone="'+v.id+'">'+(v.done?'已看完':'未看完')+'</span>'+
+            (me && me.role==='admin' ? '<button class="video-del" data-vdel="'+v.id+'">删除</button>' : '')+
+          '</div>'+
+        '</div>'+
+      '</div>';
+    }).join('');
+
+    box.querySelectorAll('video[data-vid]').forEach(el=>{
+      const v=vs.find(x=>x.id===el.dataset.vid);
+      if(!v) return;
+      let lastSent=0;
+      const report=async(final)=>{
+        const dur=Number(el.duration)||v.duration||0;
+        if(!dur) return;
+        const {status,data}=await api('/api/training/video/watch',{videoId:v.id,pos:final?Math.min(el.currentTime+0.5, dur):el.currentTime,dur});
+        if(status===200 && data && data.ok && data.done && !v.done){
+          v.done=true;
+          const chip=box.querySelector('[data-vdone="'+v.id+'"]');
+          if(chip){ chip.textContent='已看完'; chip.classList.add('ok'); }
+          $('cVideoCount').textContent = (vs.length+' 个 · 已看完 '+ready.filter(x=>x.done).length+'/'+ready.length);
+          updateGateHint(course);
+          refresh();
+        }
+      };
+      el.ontimeupdate=()=>{
+        if(Date.now()-lastSent<5000) return;
+        lastSent=Date.now();
+        report(false);
+      };
+      el.onpause=()=>{ if(el.currentTime>1) report(false); };
+      el.onended=()=>{ report(true); };
+    });
+
+    box.querySelectorAll('[data-vdel]').forEach(btn=>{
+      btn.onclick=async()=>{
+        if(!confirm('删除这段视频？文件会一起删掉')) return;
+        const {status,data}=await api('/api/training/video/delete',{id:btn.dataset.vdel});
+        if(status!==200||!data.ok){ toast(data.err||'删除失败'); return; }
+        toast('已删除');
+        coursesCache=null;
+        const id=courseCtx?courseCtx.id:null;
+        if(id) openCourse(id);
+      };
+    });
+
+    updateGateHint(course);
+  }
+
+  function updateGateHint(course){
+    const box=$('cGate'); if(!box) return;
+    if(!course) return;
+    const ready=(course.videos||[]).filter(v=>v.status==='ready');
+    if(!ready.length){ box.textContent=''; return; }
+    const done=ready.filter(v=>v.done).length;
+    if(done>=ready.length){
+      box.innerHTML='<span style="color:#0e9f8e">视频已全部看完，可以作答</span>';
+    }else{
+      box.innerHTML='<span style="color:#c07d18">需先看完视频（'+done+'/'+ready.length+'），否则无法提交测验</span>';
+    }
+  }
+
+  let pollTimer=null;
+  function startVideoPoll(cid){
+    if(pollTimer){ clearInterval(pollTimer); pollTimer=null; }
+    pollTimer=setInterval(async()=>{
+      const {data}=await api('/api/training/courses');
+      if(!data || !data.ok) return;
+      const c=data.courses.find(x=>x.id===cid);
+      if(!c) return;
+      coursesCache=data;
+      if(courseCtx && courseCtx.id===cid){
+        courseCtx.videos=c.videos;
+        renderCourseVideos(courseCtx);
+      }
+      if(!(c.videos||[]).some(v=>v.status==='processing')){
+        clearInterval(pollTimer); pollTimer=null;
+      }
+    },3000);
+  }
+
+  $('cVideoUpload').onclick=()=>{
+    if(!courseCtx) return;
+    const file=$('cFile').files[0];
+    const title=$('cVideoTitle').value.trim();
+    if(!file){ toast('请先选择视频文件'); return; }
+    if(title.length<2){ toast('请填写视频标题（至少 2 字）'); return; }
+    if(file.size > 300*1024*1024){ toast('单个视频不能超过 300MB'); return; }
+
+    const btn=$('cVideoUpload');
+    btn.disabled=true; btn.textContent='上传中…';
+    $('cProgWrap').classList.remove('hidden');
+    $('cProgText').classList.remove('hidden');
+    $('cProg').style.width='0';
+    $('cProgText').textContent='0%';
+
+    const cid=courseCtx.id;
+    const xhr=new XMLHttpRequest();
+    xhr.open('POST','/rehab/api/training/video/upload?courseId='+encodeURIComponent(cid)+'&title='+encodeURIComponent(title));
+    xhr.setRequestHeader('Content-Type', file.type || 'video/mp4');
+    xhr.upload.onprogress=(e)=>{
+      if(!e.lengthComputable) return;
+      const p=Math.round(e.loaded/e.total*100);
+      $('cProg').style.width=p+'%';
+      $('cProgText').textContent='已上传 '+p+'%（'+fmtSize(e.loaded)+' / '+fmtSize(e.total)+'）';
+    };
+    xhr.onload=()=>{
+      btn.disabled=false; btn.textContent='上传视频（最大 300MB）';
+      let d={}; try{ d=JSON.parse(xhr.responseText); }catch(e){}
+      if(xhr.status!==200 || !d.ok){
+        $('cProgText').textContent='上传失败：'+(d.err||('HTTP '+xhr.status));
+        toast(d.err||'上传失败');
+        return;
+      }
+      toast('视频已上传，正在转码');
+      coursesCache=null;
+      openCourse(cid);
+      startVideoPoll(cid);
+    };
+    xhr.onerror=()=>{
+      btn.disabled=false; btn.textContent='上传视频（最大 300MB）';
+      $('cProgText').textContent='上传失败：网络中断';
+      toast('上传失败');
+    };
+    xhr.send(file);
+  };
+
+  $('cSubmit').onclick=async()=>{
+    if(!courseCtx) return;
+    const err=$('cErr'); err.textContent='';
+    const readyV=(courseCtx.videos||[]).filter(v=>v.status==='ready');
+    const unseen=readyV.filter(v=>!v.done);
+    if(unseen.length){ err.textContent='请先看完本课视频（还剩 '+unseen.length+' 个）'; return; }
+    const n=courseCtx.questions.length;
+    const answers=[];
+    for(let i=0;i<n;i++){
+      if(courseAnswers[i]===undefined){ err.textContent='请回答全部题目'; return; }
+      answers.push(courseAnswers[i]);
+    }
+    $('cSubmit').disabled=true;
+    const {status,data}=await api('/api/training/exam',{courseId:courseCtx.id,answers});
+    $('cSubmit').disabled=false;
+    if(status!==200||!data.ok){ err.textContent=data.err||'提交失败'; return; }
+    $('cSubmit').textContent='重新作答';
+    (data.explanations||[]).forEach(ex=>{
+      const qEl=$('cQuiz').querySelector('.q[data-q="'+ex.index+'"]');
+      if(!qEl) return;
+      qEl.querySelectorAll('.chip').forEach((b,oi)=>{
+        if(oi===ex.answer) b.style.borderColor='#0e9f8e';
+        if(courseAnswers[ex.index]===oi && !ex.ok) b.style.borderColor='#d9564f';
+      });
+    });
+    $('cResult').innerHTML='<span>得分</span><span style="color:'+(data.passed?'#0e9f8e':'#d9564f')+'">'+data.score+' / '+data.total+(data.passed?' · 通过':' · 未通过，请重考')+'</span>';
+    if(data.passed) toast('已通过：'+courseCtx.title);
+    refresh();
+  };
+
+  $('demoCert').onclick=async()=>{
+    const {status,data}=await api('/api/training/demo',{});
+    if(status!==200||!data.ok){ toast(data.err||'失败'); return; }
+    toast('已一键完成认证（测试）'); refresh();
+  };
+
+  /* ---------- 管理员审核台 ---------- */
+  function renderAdmin(){
+    const s=snap.stats||{};
+    $('adminStats').textContent='待审 '+(s.pending||0)+' · 通过 '+(s.approved||0)+' · 结业 '+(s.certified||0)+' · 在线 '+(s.onlineNow||0);
+
+    const pend=snap.pending||[];
+    $('pendingReview').innerHTML = pend.length? pend.map(p=>{
+      const v=p.verify;
+      return '<div class="booking"><div class="head"><span class="id">'+esc(p.name)+'</span><span class="badge b-pending">待审核</span></div>'+
+        '<div class="kv"><span>姓名</span><span>'+esc(v.realName||'—')+'</span></div>'+
+        '<div class="kv"><span>证件</span><span>'+esc(v.idNoMasked||'—')+'</span></div>'+
+        '<div class="kv"><span>从业</span><span>'+(v.yearsExp||0)+' 年 · '+esc(v.background||'—')+'</span></div>'+
+        '<div class="kv"><span>健康证</span><span>'+(v.healthCert?'已持':'未持')+' · 无犯罪记录 '+(v.noRecord?'已承诺':'未承诺')+'</span></div>'+
+        '<div class="actions">'+
+          '<button class="btn sm" data-review="approve" data-name="'+esc(p.name)+'">通过</button>'+
+          '<button class="btn danger sm" data-review="reject" data-name="'+esc(p.name)+'">驳回</button>'+
+        '</div></div>';
+    }).join('') : '<div class="empty">暂无待审核资料</div>';
+
+    $('supOverview').innerHTML = (snap.supervisors||[]).length? (snap.supervisors||[]).map(x=>{
+      const st={none:'未认证',pending:'审核中',approved:'已通过',rejected:'已驳回'}[x.verify.status]||'未认证';
+      return '<div class="kv"><span>'+esc(x.name)+'</span><span>'+st+' · 课程 '+x.training.completed+'/'+x.training.total+' · '+(x.online?'在线':'离线')+'</span></div>';
+    }).join('') : '<div class="empty">还没有监督者账号</div>';
+  }
+
+  /* ---------- 提醒 / 周报 / 家属绑定 ---------- */
+  function fmtTime(ts){
+    const d=new Date(ts); const p=n=>String(n).padStart(2,'0');
+    return p(d.getMonth()+1)+'/'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes());
+  }
+
+  function renderAlerts(list){
+    const arr=list||[];
+    const unread=arr.filter(a=>!a.read).length;
+    $('alertCount').textContent = arr.length? (unread? unread+' 条未读' : arr.length+' 条') : '';
+    if(!arr.length){
+      $('alertList').innerHTML='<div class="empty">暂无异常提醒<br>出现异常、疼痛明显上升、情绪偏低时会在这里出现</div>';
+      return;
+    }
+    $('alertList').innerHTML=arr.slice(0,10).map(a=>{
+      const c=a.level==='high'?'#d9564f':'#c07d18';
+      return '<div class="alert-item" data-id="'+a.id+'" style="border-left:2px solid '+c+';background:var(--panel2);border-radius:8px;padding:9px 11px;margin-bottom:8px;cursor:pointer">'+
+        '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px">'+
+        '<b style="font-size:13px">'+esc(a.title)+'</b>'+
+        '<span style="font-size:10.5px;color:'+(a.read?'#7b8b88':c)+'">'+(a.read?'已读':'新')+'</span></div>'+
+        '<div style="font-size:11.5px;color:#7b8b88;line-height:1.65;margin-top:3px">'+esc(a.detail)+'</div>'+
+        '<div style="font-size:10.5px;color:#8b9a97;margin-top:4px">'+fmtTime(a.createdAt)+'</div></div>';
+    }).join('');
+    $('alertList').querySelectorAll('.alert-item').forEach(el=>{
+      el.onclick=async()=>{ await api('/api/alerts/read',{id:el.dataset.id}); refresh(); };
+    });
+  }
+
+  function renderInvite(snapData){
+    const box=$('inviteBox'); if(!box) return;
+    if(snapData.role!=='patient'){ box.innerHTML=''; return; }
+    if(!snapData.invite){
+      box.innerHTML='<div style="font-size:12px;color:#7b8b88;margin-bottom:8px">还没有绑定码，家人无法查看你的记录</div><button class="btn ghost sm" id="mkInvite">生成家属绑定码</button>';
+      $('mkInvite').onclick=async()=>{ const {data}=await api('/api/patient/invite'); if(data.ok){ toast('绑定码已生成'); refresh(); } };
+      return;
+    }
+    box.innerHTML='<div style="font-size:12px;color:#7b8b88;margin-bottom:6px">家属绑定码（发给家人，用来查看你的训练记录）</div>'+
+      '<div style="font-family:ui-monospace,Menlo,monospace;font-size:24px;letter-spacing:8px;color:#0e9f8e;font-weight:700">'+esc(snapData.invite)+'</div>';
+  }
+
+  async function openWeekly(){
+    const {status,data}=await api('/api/weekly?days=7');
+    if(status!==200||!data.ok){ toast(data.err||'生成失败'); return; }
+    renderWeekly(data.report);
+    $('wmask').classList.add('open'); $('wsheet').classList.add('open');
+  }
+  function closeWeekly(){ $('wmask').classList.remove('open'); $('wsheet').classList.remove('open'); }
+
+  function renderWeekly(r){
+    const f=t=>{const d=new Date(t);const p=n=>String(n).padStart(2,'0');return p(d.getMonth()+1)+'/'+p(d.getDate());};
+    const range=f(r.window.from)+' – '+f(r.window.to);
+    const svc=r.serviceDates.length? r.serviceDates.slice().sort().map(d=>d.slice(5).replace('-','/')).join('、') : '无';
+    const focus=r.focusTop.length? r.focusTop.map(x=>x.name+' '+x.count+' 次').join('、') : '—';
+    const latest=r.latest.length? r.latest.map(x=>{
+      const def=tb&&tb.scales?tb.scales.find(s=>s.key===x.type):null;
+      return (def?def.short:x.type)+(x.total!=null?(' '+x.total+(def&&def.totalMax?('/'+def.totalMax):'')):'');
+    }).join('、') : '—';
+
+    let series='';
+    if(r.scaleSeries.length){
+      const pts=r.scaleSeries; const W=300,H=110,pad=16;
+      const x=i=>pad+(pts.length===1?(W-2*pad)/2:i*(W-2*pad)/(pts.length-1));
+      const yV=v=>H-pad-(v/10)*(H-2*pad);
+      const yC=v=>H-pad-(v/100)*(H-2*pad);
+      series='<svg class="chart" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none">'+
+        '<polyline points="'+pts.map((s,i)=>x(i)+','+yV(s.vas)).join(' ')+'" fill="none" stroke="#c07d18" stroke-width="2"/>'+
+        '<polyline points="'+pts.map((s,i)=>x(i)+','+yC(s.completion)).join(' ')+'" fill="none" stroke="#0e9f8e" stroke-width="2"/>'+
+        '</svg><div class="legend"><div class="lg"><span class="sw" style="background:#c07d18"></span>疼痛 VAS</div><div class="lg"><span class="sw" style="background:#0e9f8e"></span>训练完成度</div></div>';
+    }
+
+    $('wBody').innerHTML=
+      '<div style="font-size:20px;font-weight:700;margin-bottom:2px">'+esc(r.patient)+' 康复周报</div>'+
+      '<div style="font-size:12px;color:#7b8b88;margin-bottom:12px">'+range+' · 近 '+r.days+' 天</div>'+
+      '<div class="kv"><span>上门服务</span><span>'+r.serviceCount+' 次</span></div>'+
+      '<div class="kv"><span>服务日期</span><span>'+esc(svc)+'</span></div>'+
+      '<div class="kv"><span>每日量表</span><span>'+r.scaleCount+' 次</span></div>'+
+      '<div class="kv"><span>疼痛 VAS</span><span>'+(r.vasAvg!=null?('均值 '+r.vasAvg+'（'+r.vasMin+'–'+r.vasMax+'）'):'—')+'</span></div>'+
+      '<div class="kv"><span>训练完成度</span><span>'+(r.completionAvg!=null?(r.completionAvg+'%'):'—')+'</span></div>'+
+      '<div class="kv"><span>异常记录</span><span style="color:'+(r.abnormalCount?'#d9564f':'#7b8b88')+'">'+r.abnormalCount+' 次</span></div>'+
+      '<div class="kv"><span>想解决的问题</span><span>'+esc(focus)+'</span></div>'+
+      '<div class="kv"><span>专项评估</span><span>'+esc(latest)+'</span></div>'+
+      '<div class="kv"><span>预警</span><span>'+r.alertCount+' 条'+(r.alertHigh?('（高优先级 '+r.alertHigh+'）'):'')+'</span></div>'+
+      series;
+
+    weeklyText='【'+r.patient+' 康复周报】'+range+'\n'+
+      '上门服务：'+r.serviceCount+' 次（'+svc+'）\n'+
+      '每日量表：'+r.scaleCount+' 次'+(r.vasAvg!=null?('，疼痛 VAS 均值 '+r.vasAvg+'（'+r.vasMin+'–'+r.vasMax+'）'):'')+
+      (r.completionAvg!=null?('，完成度均值 '+r.completionAvg+'%'):'')+'\n'+
+      '异常记录：'+r.abnormalCount+' 次\n'+
+      '想解决的问题：'+focus+'\n'+
+      '专项评估：'+latest+'\n'+
+      '预警：'+r.alertCount+' 条'+(r.alertHigh?('（高优先级 '+r.alertHigh+'）'):'');
+  }
+
+  function copyWeekly(){
+    if(!weeklyText){ toast('先点生成周报'); return; }
+    const ok=()=>toast('已复制，可直接粘到微信');
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(weeklyText).then(ok).catch(fallbackCopy);
+    } else fallbackCopy();
+    function fallbackCopy(){
+      const t=document.createElement('textarea'); t.value=weeklyText; document.body.appendChild(t);
+      t.select(); try{ document.execCommand('copy'); ok(); }catch(e){ toast('复制失败，请手动长按选择'); }
+      document.body.removeChild(t);
+    }
+  }
+
+  function printWeekly(){
+    if(!weeklyText){ toast('先点生成周报'); return; }
+    const escTxt=weeklyText.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+    const html='<html><head><meta charset="utf-8"><title>康复周报</title><style>body{font-family:-apple-system,"PingFang SC",sans-serif;padding:28px;line-height:1.9;color:#222}h1{font-size:22px;margin:0 0 4px}.sub{color:#666;font-size:13px}pre{white-space:pre-wrap;font-size:14px;background:#f7f7f7;padding:14px;border-radius:8px}small{color:#999}</style></head><body><h1>康复周报</h1><pre>'+escTxt+'</pre><p><small>本报告用于家属了解训练情况，不构成医疗诊断。</small></p></body></html>';
+    const w=window.open('','_blank');
+    if(!w){ toast('浏览器拦截了新窗口'); return; }
+    w.document.write(html); w.document.close();
+    setTimeout(()=>{ try{ w.print(); }catch(e){} }, 300);
+  }
+
+  function openBind(){
+    $('bindErr').textContent='';
+    $('bindCode').value='';
+    $('bindPatient').innerHTML='<option value="">选择患者（测试模式）</option>';
+    api('/api/patients').then(({data})=>{
+      if(data && data.ok) $('bindPatient').innerHTML='<option value="">选择患者（测试模式）</option>'+data.patients.map(p=>'<option>'+esc(p)+'</option>').join('');
+    });
+    $('bmask').classList.add('open'); $('bsheet').classList.add('open');
+  }
+  function closeBind(){ $('bmask').classList.remove('open'); $('bsheet').classList.remove('open'); }
+
+  async function doBind(){
+    const code=$('bindCode').value.trim();
+    const patient=$('bindPatient').value;
+    if(!code && !patient){ $('bindErr').textContent='请选择患者或填写绑定码'; return; }
+    const {status,data}=await api('/api/family/link', code?{code}:{patient});
+    if(status!==200||!data.ok){ $('bindErr').textContent=data.err||'绑定失败'; return; }
+    closeBind(); toast('已绑定：'+data.linkedPatient); refresh();
+  }
+
+  /* ---------- 量表弹层 ---------- */
+  function openScale(ctx){
+    scaleCtx=ctx;
+    $('sheetTitle').textContent = ctx.type==='complete' ? '完成服务 · 填写今日量表' : '补填量表';
+    $('sheetMeta').innerHTML = '<span>患者</span><span>'+esc(ctx.patient)+'</span>';
+    ['vas','completion','mmt','fatigue'].forEach(k=>{ $(k).value = k==='completion'?80 : 3; $(k+'Val').textContent=$(k).value; });
+    $('abnormal').checked=false; $('scaleNote').value=''; $('scaleErr').textContent='';
+    $('mask').classList.add('open'); $('sheet').classList.add('open');
+  }
+  function closeScale(){ $('mask').classList.remove('open'); $('sheet').classList.remove('open'); }
+  $('mask').onclick=closeScale; $('sheetClose').onclick=closeScale;
+
+  ['vas','completion','mmt','fatigue'].forEach(k=>{
+    $(k).oninput=()=>{ $(k+'Val').textContent=$(k).value; };
+  });
+
+  $('scaleSubmit').onclick=async()=>{
+    const err=$('scaleErr'); err.textContent='';
+    const payload={
+      vas:+$('vas').value, completion:+$('completion').value, mmt:+$('mmt').value,
+      fatigue:+$('fatigue').value, abnormal:$('abnormal').checked, note:$('scaleNote').value.trim()
+    };
+    $('scaleSubmit').disabled=true;
+
+    let res;
+    if(scaleCtx.type==='complete'){
+      res = await api('/api/book/complete', { id: scaleCtx.bookingId, scale: payload });
+    }else{
+      res = await api('/api/scale', { patient: scaleCtx.patient, scale: payload });
+    }
+    $('scaleSubmit').disabled=false;
+
+    if(res.status!==200||!res.data.ok){ err.textContent=res.data.err||'提交失败'; return; }
+    closeScale(); toast('量表已提交');
+    refresh();
+  };
+
+  $('addScaleBtn').onclick=()=>{
+    const p=$('patientSel').value;
+    if(!p){ toast('暂无患者可填写'); return; }
+    openScale({type:'manual', patient:p});
+  };
+
+  /* ---------- 操作按钮 ---------- */
+  document.addEventListener('click', async e=>{
+    const rev=e.target.closest('[data-review]');
+    if(rev){
+      const action=rev.dataset.review, name=rev.dataset.name;
+      let note='';
+      if(action==='reject'){ note=(prompt('驳回原因（可选，会显示给监督者）')||''); }
+      const {status,data}=await api('/api/admin/review',{name,action,note});
+      if(status!==200||!data.ok) toast(data.err||'操作失败'); else toast(action==='approve'?'已通过':'已驳回');
+      refresh();
+      return;
+    }
+    const el=e.target.closest('[data-act]');
+    if(!el) return;
+    const act=el.dataset.act, id=el.dataset.id;
+    if(act==='confirm'){
+      const {status,data}=await api('/api/book/confirm',{id});
+      if(status!==200||!data.ok) toast(data.err||'操作失败'); else toast('已确认，请按时上门');
+    }else if(act==='checkin'){
+      const {status,data}=await api('/api/book/checkin',{id});
+      if(status!==200||!data.ok) toast(data.err||'操作失败'); else toast('签到成功');
+    }else if(act==='complete'){
+      const b=(snap.activeList||[]).find(x=>x.id===id);
+      if(!b) return;
+      openScale({type:'complete', bookingId:id, patient:b.patient});
+    }else if(act==='flow'){
+      await loadProtocol();
+      activateTab('s-flow');
+      const fp=$('flowPatient'); const pn=el.dataset.patient;
+      if(fp && pn){ const hit=[...fp.options].find(o=>o.value===pn); if(hit) fp.value=pn; }
+      toast('确认分期后，点「开始本次陪练」');
+    }else if(act==='cancel'){
+      if(!confirm('确认取消？')) return;
+      const {status,data}=await api('/api/book/cancel',{id,reason:'用户取消'});
+      if(status!==200||!data.ok) toast(data.err||'操作失败'); else toast('已取消');
+    }
+    refresh();
+  });
+
+  document.addEventListener('click', e=>{
+    const b=e.target.closest('[data-flow]');
+    if(!b) return;
+    const s=flowList.running.find(x=>x.id===b.dataset.flow);
+    if(s) openFlow(s);
+  });
+
+  $('fvBack').onclick=()=>closeFlow();
+  $('flowStart').onclick=startFlow;
+
+  /* ---------- WS ---------- */
+  function connect(){
+    if(ws){ try{ws.close()}catch(e){} }
+    const proto=location.protocol==='https:'?'wss://':'ws://';
+    ws=new WebSocket(proto+location.host+'/rehab/ws');
+    ws.onmessage=ev=>{ let d; try{d=JSON.parse(ev.data)}catch(e){return} if(d.type==='snapshot'){ snap=d; render(); } };
+    ws.onclose=()=>setTimeout(connect,2000);
+    ws.onerror=()=>{ try{ws.close()}catch(e){} };
+  }
+
+  async function refresh(){ const {data}=await api('/api/me'); if(data&&data.ok&&data.user){ me.profile=data.profile; } }
+
+  $('logoutBtn').onclick=async()=>{
+    await api('/api/logout',{});
+    if(ws){try{ws.close()}catch(e){}}
+    snap=null; me=null;
+    mainView.classList.add('hidden'); loginView.classList.remove('hidden');
+  };
+
+  /* ---------- 启动 ---------- */
+  (async function boot(){
+    const m=await api('/meta');
+    if(m.data&&m.data.ok) meta=m.data;
+    if(meta && meta.devMode){
+      $('devEnter').style.display='block';
+      $('devTip').style.display='block';
+      $('password').classList.add('dev-hide');
+      $('modeRow').classList.add('dev-hide');
+      $('authBtn').classList.add('dev-hide');
+      $('username').placeholder='输入名字，或留空使用测试账号';
+    }
+    const {status,data}=await api('/api/me');
+    if(status===200&&data.user){ me={user:data.user,role:data.role,profile:data.profile}; enterMain(); }
+    else loginView.classList.remove('hidden');
+  })();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f1419">
+<title>聊天室</title>
+<style>
+  :root {
+    --bg: #0f1419;
+    --panel: #171f27;
+    --panel-2: #1e2831;
+    --line: #2a3643;
+    --text: #e6edf3;
+    --dim: #8b9bab;
+    --mine: #1f6feb;
+    --other: #232f3a;
+    --accent: #36c9a8;
+    --danger: #f85149;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+      "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    font-size: 15px;
+    overflow: hidden;
+  }
+  .hidden { display: none !important; }
+
+  /* ---------------- 登录 ---------------- */
+  .login-wrap { height: 100%; display: flex; align-items: center; justify-content: center; padding: 24px; }
+  .login-card {
+    width: 100%; max-width: 360px;
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 14px; padding: 28px 24px 24px;
+  }
+  .logo {
+    width: 44px; height: 44px; border-radius: 12px;
+    background: linear-gradient(135deg, var(--accent), #1f6feb);
+    display: grid; place-items: center; font-size: 20px; margin-bottom: 18px;
+  }
+  h1 { font-size: 21px; margin: 0 0 6px; letter-spacing: -.01em; }
+  .hint { color: var(--dim); font-size: 13px; margin: 0 0 20px; }
+  .tabs { display: flex; gap: 6px; margin-bottom: 16px; background: var(--panel-2); padding: 4px; border-radius: 10px; }
+  .tabs button {
+    flex: 1; border: 0; background: transparent; color: var(--dim);
+    padding: 9px 0; border-radius: 8px; font-size: 14px; cursor: pointer;
+    font-family: inherit; transition: .15s;
+  }
+  .tabs button.active { background: var(--bg); color: var(--text); font-weight: 600; }
+  .field {
+    width: 100%; margin-bottom: 12px; padding: 12px 14px;
+    background: var(--panel-2); border: 1px solid var(--line);
+    border-radius: 10px; color: var(--text); font-size: 15px;
+    font-family: inherit; outline: none;
+  }
+  .field:focus { border-color: var(--accent); }
+  .submit {
+    width: 100%; padding: 12px 0; margin-top: 4px;
+    background: var(--accent); color: #06120e; border: 0; border-radius: 10px;
+    font-size: 15px; font-weight: 600; font-family: inherit; cursor: pointer;
+  }
+  .submit:disabled { opacity: .6; }
+  .err { color: var(--danger); font-size: 13px; min-height: 18px; margin: 10px 0 0; }
+
+  /* ---------------- 聊天 ---------------- */
+  #chatView { height: 100%; display: flex; flex-direction: column; }
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px; border-bottom: 1px solid var(--line);
+    background: var(--panel); flex-shrink: 0;
+  }
+  .room { font-size: 15px; font-weight: 600; }
+  .topbar-right { display: flex; align-items: center; gap: 8px; }
+  .status { font-size: 12px; color: var(--dim); display: flex; align-items: center; gap: 5px; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+  .dot.off { background: var(--danger); }
+  .icon-btn {
+    background: transparent; border: 1px solid var(--line); color: var(--text);
+    padding: 6px 10px; border-radius: 8px; font-size: 12px; font-family: inherit;
+    cursor: pointer; display: flex; align-items: center; gap: 5px;
+  }
+  .icon-btn .badge {
+    background: var(--accent); color: #06120e; border-radius: 999px;
+    padding: 0 6px; font-size: 11px; font-weight: 700; line-height: 16px;
+  }
+
+  .messages {
+    flex: 1; overflow-y: auto; padding: 16px;
+    display: flex; flex-direction: column; gap: 10px; scroll-behavior: smooth;
+  }
+  .empty { margin: auto; color: var(--dim); font-size: 13px; text-align: center; line-height: 1.9; }
+  .row { display: flex; flex-direction: column; max-width: 78%; }
+  .row.mine { align-self: flex-end; align-items: flex-end; }
+  .row.other { align-self: flex-start; align-items: flex-start; }
+  .who { font-size: 11px; color: var(--dim); margin-bottom: 3px; padding: 0 2px; }
+  .who .city { color: #6f8296; }
+  .bubble { padding: 9px 13px; border-radius: 12px; line-height: 1.55; word-break: break-word; white-space: pre-wrap; font-size: 14.5px; }
+  .bubble.mine { background: var(--mine); border-bottom-right-radius: 4px; }
+  .bubble.other { background: var(--other); border-bottom-left-radius: 4px; }
+  .time { font-size: 10.5px; color: var(--dim); margin-top: 3px; padding: 0 2px; }
+
+  .composer {
+    display: flex; gap: 8px; padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--line); background: var(--panel); flex-shrink: 0;
+  }
+  .composer input {
+    flex: 1; padding: 11px 14px; border-radius: 10px;
+    background: var(--panel-2); border: 1px solid var(--line);
+    color: var(--text); font-size: 15px; font-family: inherit; outline: none;
+  }
+  .composer input:focus { border-color: var(--accent); }
+  .composer button {
+    background: var(--accent); color: #06120e; border: 0; border-radius: 10px;
+    padding: 0 18px; font-size: 15px; font-weight: 600; font-family: inherit; cursor: pointer;
+  }
+  .composer button:disabled { opacity: .5; }
+
+  /* ---------------- 提示条 ---------------- */
+  .notice {
+    display: flex; gap: 10px; align-items: flex-start;
+    background: rgba(54, 201, 168, .1); border-bottom: 1px solid rgba(54, 201, 168, .25);
+    padding: 10px 14px; font-size: 12.5px; color: #b9d8d1; line-height: 1.6; flex-shrink: 0;
+  }
+  .notice button {
+    background: transparent; border: 0; color: var(--accent); font-family: inherit;
+    font-size: 12.5px; cursor: pointer; padding: 0; white-space: nowrap;
+  }
+
+  /* ---------------- 在线列表抽屉 ---------------- */
+  .mask {
+    position: fixed; inset: 0; background: rgba(0,0,0,.55); opacity: 0;
+    pointer-events: none; transition: opacity .2s; z-index: 30;
+  }
+  .mask.open { opacity: 1; pointer-events: auto; }
+  .sheet {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 31;
+    background: var(--panel); border-top-left-radius: 16px; border-top-right-radius: 16px;
+    border-top: 1px solid var(--line);
+    transform: translateY(100%); transition: transform .24s cubic-bezier(.3,.8,.3,1);
+    max-height: 72vh; display: flex; flex-direction: column;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .sheet.open { transform: translateY(0); }
+  .sheet-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 16px; border-bottom: 1px solid var(--line); flex-shrink: 0;
+  }
+  .sheet-title { font-size: 14px; font-weight: 600; }
+  .sheet-close { background: transparent; border: 0; color: var(--dim); font-size: 20px; cursor: pointer; line-height: 1; }
+  .user-list { overflow-y: auto; padding: 6px 0; }
+  .user-item { display: flex; align-items: center; gap: 10px; padding: 11px 16px; }
+  .avatar {
+    width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+    background: var(--panel-2); border: 1px solid var(--line);
+    display: grid; place-items: center; font-size: 13px; color: var(--accent); font-weight: 600;
+  }
+  .user-main { flex: 1; min-width: 0; }
+  .user-name { font-size: 14px; display: flex; align-items: center; gap: 6px; }
+  .tag {
+    font-size: 10px; color: var(--dim); border: 1px solid var(--line);
+    padding: 0 5px; border-radius: 4px; line-height: 15px;
+  }
+  .user-loc { font-size: 12px; color: var(--dim); margin-top: 2px; display: flex; align-items: center; gap: 4px; }
+  .user-loc .pin { color: var(--accent); font-size: 11px; }
+  .privacy {
+    border-top: 1px solid var(--line); padding: 14px 16px; display: flex;
+    align-items: center; justify-content: space-between; gap: 12px; flex-shrink: 0;
+  }
+  .privacy-text { font-size: 12.5px; color: var(--dim); line-height: 1.5; }
+  .privacy-text b { color: var(--text); font-weight: 600; display: block; font-size: 13px; margin-bottom: 2px; }
+  .switch { position: relative; width: 44px; height: 25px; flex-shrink: 0; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider {
+    position: absolute; inset: 0; background: var(--panel-2); border: 1px solid var(--line);
+    border-radius: 999px; transition: .2s; cursor: pointer;
+  }
+  .slider::before {
+    content: ""; position: absolute; width: 17px; height: 17px; border-radius: 50%;
+    left: 3px; top: 3px; background: var(--dim); transition: .2s;
+  }
+  .switch input:checked + .slider { background: var(--accent); border-color: var(--accent); }
+  .switch input:checked + .slider::before { transform: translateX(19px); background: #06120e; }
+</style>
+</head>
+<body>
+
+<!-- 登录页 -->
+<div id="loginView" class="login-wrap">
+  <div class="login-card">
+    <div class="logo">💬</div>
+    <h1>公共聊天室</h1>
+    <p class="hint">登录后即可和所有在线的人聊天</p>
+
+    <div class="tabs">
+      <button id="tabLogin" class="active" data-mode="login">登录</button>
+      <button id="tabRegister" data-mode="register">注册</button>
+    </div>
+
+    <form id="authForm">
+      <input id="username" class="field" placeholder="用户名（2-20 位）" autocomplete="username" maxlength="20">
+      <input id="password" class="field" type="password" placeholder="密码（至少 6 位）" autocomplete="current-password" maxlength="64">
+      <button id="submitBtn" class="submit" type="submit">登录</button>
+      <p id="authErr" class="err"></p>
+    </form>
+  </div>
+</div>
+
+<!-- 聊天页 -->
+<div id="chatView" class="hidden">
+  <div class="topbar">
+    <div class="room">公共聊天室</div>
+    <div class="topbar-right">
+      <div class="status"><span id="dot" class="dot"></span><span id="connText">连接中</span></div>
+      <button id="onlineBtn" class="icon-btn">在线 <span class="badge" id="onlineCount">0</span></button>
+      <button id="logoutBtn" class="icon-btn">退出</button>
+    </div>
+  </div>
+
+  <div id="notice" class="notice hidden">
+    <div>本房间会显示你的<b>城市级位置</b>（按 IP 推测，不是精确坐标）。首次进入自动记录，可在「在线」列表里关闭。</div>
+    <button id="noticeOk">知道了</button>
+  </div>
+
+  <div id="messages" class="messages">
+    <div class="empty" id="emptyTip">还没有人说话<br>发第一条消息吧</div>
+  </div>
+
+  <form id="sendForm" class="composer">
+    <input id="msgInput" placeholder="说点什么…" maxlength="500" autocomplete="off">
+    <button id="sendBtn" type="submit">发送</button>
+  </form>
+</div>
+
+<!-- 在线用户抽屉 -->
+<div id="mask" class="mask"></div>
+<div id="sheet" class="sheet">
+  <div class="sheet-head">
+    <div class="sheet-title">在线用户 <span id="sheetCount" style="color:#8b9bab;font-weight:400"></span></div>
+    <button id="sheetClose" class="sheet-close">×</button>
+  </div>
+  <div id="userList" class="user-list"></div>
+  <div class="privacy">
+    <div class="privacy-text">
+      <b>对外显示我的位置</b>
+      关闭后，其他人只看到「已隐藏」
+    </div>
+    <label class="switch">
+      <input type="checkbox" id="privacyToggle" checked>
+      <span class="slider"></span>
+    </label>
+  </div>
+</div>
+
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const loginView = $('loginView'), chatView = $('chatView');
+  const authForm = $('authForm'), authErr = $('authErr'), submitBtn = $('submitBtn');
+  const usernameInput = $('username'), passwordInput = $('password');
+  const messagesEl = $('messages'), emptyTip = $('emptyTip');
+  const msgInput = $('msgInput'), sendBtn = $('sendBtn');
+  const dot = $('dot'), connText = $('connText'), onlineCount = $('onlineCount');
+  const mask = $('mask'), sheet = $('sheet'), userList = $('userList'), sheetCount = $('sheetCount');
+  const privacyToggle = $('privacyToggle');
+  const notice = $('notice');
+
+  let mode = 'login';
+  let me = null;         // { user, location, hideLoc }
+  let ws = null;
+  let retry = 0;
+  let reconnectTimer = null;
+  let onlineUsers = [];
+
+  /* ---------------- 工具 ---------------- */
+  async function api(path, body) {
+    const res = await fetch(path, {
+      method: body === undefined ? 'GET' : 'POST',
+      headers: body === undefined ? {} : { 'Content-Type': 'application/json' },
+      body: body === undefined ? undefined : JSON.stringify(body),
+      credentials: 'same-origin',
+    });
+    let data = {};
+    try { data = await res.json(); } catch (e) {}
+    return { status: res.status, data };
+  }
+
+  function fmtTime(ts) {
+    const d = new Date(ts);
+    const pad = (n) => String(n).padStart(2, '0');
+    return pad(d.getHours()) + ':' + pad(d.getMinutes());
+  }
+
+  function nearBottom() {
+    return messagesEl.scrollHeight - messagesEl.scrollTop - messagesEl.clientHeight < 120;
+  }
+
+  function scrollToBottom() { messagesEl.scrollTop = messagesEl.scrollHeight; }
+
+  /* ---------------- 消息渲染 ---------------- */
+  function appendMessage(m) {
+    if (emptyTip && emptyTip.parentNode) emptyTip.remove();
+
+    const mine = me && m.user === me.user;
+    const row = document.createElement('div');
+    row.className = 'row ' + (mine ? 'mine' : 'other');
+
+    const who = document.createElement('div');
+    who.className = 'who';
+    const nameSpan = document.createElement('span');
+    nameSpan.textContent = mine ? '我' : m.user;
+    who.appendChild(nameSpan);
+    if (m.city) {
+      const citySpan = document.createElement('span');
+      citySpan.className = 'city';
+      citySpan.textContent = ' · ' + m.city;
+      who.appendChild(citySpan);
+    }
+
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble ' + (mine ? 'mine' : 'other');
+    bubble.textContent = m.text;  // textContent 天然防 XSS
+
+    const time = document.createElement('div');
+    time.className = 'time';
+    time.textContent = fmtTime(m.ts);
+
+    row.appendChild(who); row.appendChild(bubble); row.appendChild(time);
+    messagesEl.appendChild(row);
+  }
+
+  function renderHistory(list) {
+    messagesEl.innerHTML = '';
+    if (!list || !list.length) {
+      const tip = document.createElement('div');
+      tip.className = 'empty';
+      tip.innerHTML = '还没有人说话<br>发第一条消息吧';
+      messagesEl.appendChild(tip);
+      return;
+    }
+    list.forEach(appendMessage);
+    scrollToBottom();
+  }
+
+  /* ---------------- 在线用户 ---------------- */
+  function renderOnline(list) {
+    onlineUsers = list || [];
+    onlineCount.textContent = onlineUsers.length;
+    sheetCount.textContent = '(' + onlineUsers.length + ')';
+    userList.innerHTML = '';
+
+    if (!onlineUsers.length) {
+      const empty = document.createElement('div');
+      empty.className = 'empty';
+      empty.style.padding = '24px 0';
+      empty.textContent = '暂时没人在线';
+      userList.appendChild(empty);
+      return;
+    }
+
+    onlineUsers.forEach((u) => {
+      const isMe = me && u.user === me.user;
+
+      const item = document.createElement('div');
+      item.className = 'user-item';
+
+      const avatar = document.createElement('div');
+      avatar.className = 'avatar';
+      avatar.textContent = u.user.slice(0, 1);
+
+      const main = document.createElement('div');
+      main.className = 'user-main';
+
+      const nameRow = document.createElement('div');
+      nameRow.className = 'user-name';
+      const nm = document.createElement('span');
+      nm.textContent = u.user;
+      nameRow.appendChild(nm);
+      if (isMe) {
+        const tag = document.createElement('span');
+        tag.className = 'tag';
+        tag.textContent = '我';
+        nameRow.appendChild(tag);
+      }
+
+      const locRow = document.createElement('div');
+      locRow.className = 'user-loc';
+      const pin = document.createElement('span');
+      pin.className = 'pin';
+      pin.textContent = '📍';
+      const loc = document.createElement('span');
+      loc.textContent = u.location || '未知';
+      locRow.appendChild(pin); locRow.appendChild(loc);
+
+      main.appendChild(nameRow); main.appendChild(locRow);
+      item.appendChild(avatar); item.appendChild(main);
+      userList.appendChild(item);
+    });
+  }
+
+  function setConn(ok) {
+    dot.className = 'dot' + (ok ? '' : ' off');
+    connText.textContent = ok ? '已连接' : '重连中';
+    sendBtn.disabled = !ok;
+  }
+
+  /* ---------------- WebSocket ---------------- */
+  function connect() {
+    clearTimeout(reconnectTimer);
+    const proto = location.protocol === 'https:' ? 'wss://' : 'ws://';
+    ws = new WebSocket(proto + location.host + '/ws');
+
+    ws.onopen = () => { retry = 0; setConn(true); };
+
+    ws.onmessage = (ev) => {
+      let data;
+      try { data = JSON.parse(ev.data); } catch (e) { return; }
+      if (data.type === 'history') {
+        renderHistory(data.messages);
+      } else if (data.type === 'msg') {
+        const stick = nearBottom();
+        appendMessage(data.message);
+        if (stick) scrollToBottom();
+      } else if (data.type === 'presence') {
+        renderOnline(data.users);
+      }
+    };
+
+    ws.onclose = () => {
+      setConn(false);
+      retry += 1;
+      reconnectTimer = setTimeout(connect, Math.min(1000 * Math.pow(1.6, retry), 15000));
+    };
+
+    ws.onerror = () => { try { ws.close(); } catch (e) {} };
+  }
+
+  function send(text) {
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    const t = text.trim();
+    if (!t) return;
+    ws.send(JSON.stringify({ type: 'send', text: t }));
+  }
+
+  /* ---------------- 视图 ---------------- */
+  function enterChat(profile) {
+    me = profile;
+    loginView.classList.add('hidden');
+    chatView.classList.remove('hidden');
+    privacyToggle.checked = !profile.hideLoc;
+    setConn(false);
+    connect();
+    msgInput.focus();
+
+    // 首次进入提示位置采集
+    if (!localStorage.getItem('locNoticeShown')) {
+      notice.classList.remove('hidden');
+    }
+  }
+
+  function showLogin() {
+    me = null;
+    if (ws) { try { ws.close(); } catch (e) {} ws = null; }
+    closeSheet();
+    chatView.classList.add('hidden');
+    loginView.classList.remove('hidden');
+  }
+
+  function openSheet() { mask.classList.add('open'); sheet.classList.add('open'); }
+  function closeSheet() { mask.classList.remove('open'); sheet.classList.remove('open'); }
+
+  /* ---------------- 事件 ---------------- */
+  $('tabLogin').onclick = () => switchMode('login');
+  $('tabRegister').onclick = () => switchMode('register');
+  $('onlineBtn').onclick = openSheet;
+  $('sheetClose').onclick = closeSheet;
+  mask.onclick = closeSheet;
+  $('noticeOk').onclick = () => {
+    localStorage.setItem('locNoticeShown', '1');
+    notice.classList.add('hidden');
+  };
+
+  function switchMode(next) {
+    mode = next;
+    $('tabLogin').classList.toggle('active', mode === 'login');
+    $('tabRegister').classList.toggle('active', mode === 'register');
+    submitBtn.textContent = mode === 'login' ? '登录' : '注册并登录';
+    passwordInput.autocomplete = mode === 'login' ? 'current-password' : 'new-password';
+    authErr.textContent = '';
+  }
+
+  authForm.onsubmit = async (e) => {
+    e.preventDefault();
+    authErr.textContent = '';
+    submitBtn.disabled = true;
+    submitBtn.textContent = '处理中…';
+    const username = usernameInput.value.trim();
+    const password = passwordInput.value;
+    const path = mode === 'login' ? '/api/login' : '/api/register';
+    try {
+      const { status, data } = await api(path, { username, password });
+      if (status !== 200 || !data.ok) {
+        authErr.textContent = data.err || '操作失败，请重试';
+        return;
+      }
+      passwordInput.value = '';
+      enterChat({ user: data.user, location: data.location, hideLoc: data.hideLoc });
+    } catch (err) {
+      authErr.textContent = '网络错误，请重试';
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = mode === 'login' ? '登录' : '注册并登录';
+    }
+  };
+
+  privacyToggle.onchange = async () => {
+    const hideLoc = !privacyToggle.checked;
+    const { status, data } = await api('/api/privacy', { hideLoc });
+    if (status !== 200 || !data.ok) {
+      privacyToggle.checked = !privacyToggle.checked; // 回滚
+      return;
+    }
+    me.hideLoc = data.hideLoc;
+    me.location = data.location;
+  };
+
+  $('logoutBtn').onclick = async () => {
+    await api('/api/logout', {});
+    showLogin();
+  };
+
+  $('sendForm').onsubmit = (e) => {
+    e.preventDefault();
+    const t = msgInput.value;
+    if (!t.trim()) return;
+    send(t);
+    msgInput.value = '';
+    scrollToBottom();
+  };
+
+  msgInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+      e.preventDefault();
+      $('sendForm').requestSubmit();
+    }
+  });
+
+  msgInput.addEventListener('focus', () => setTimeout(scrollToBottom, 300));
+  window.addEventListener('resize', () => { if (nearBottom()) scrollToBottom(); });
+
+  /* ---------------- 启动 ---------------- */
+  (async function boot() {
+    const { status, data } = await api('/api/me');
+    if (status === 200 && data.user) {
+      enterChat({ user: data.user, location: data.location, hideLoc: data.hideLoc });
+    } else {
+      showLogin();
+    }
+  })();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>临床审阅稿 · 康陪</title>
+<style>
+  :root{
+    --bg:#f3f6f5; --card:#ffffff; --ink:#15201e; --dim:#6b7d79;
+    --brand:#0e9f8e; --brand-d:#088176; --line:#e3ece9;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    line-height:1.65;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:680px;margin:0 auto;padding:22px 16px 40px}
+  .top{display:flex;align-items:center;gap:10px;margin-bottom:18px}
+  .top a{color:var(--dim);text-decoration:none;font-size:13px;border:1px solid var(--line);
+    background:#fff;border-radius:999px;padding:6px 12px}
+  .hero{background:linear-gradient(135deg,#0e9f8e,#0aa597 55%,#12b3a0);border-radius:18px;
+    padding:22px 20px;color:#fff;box-shadow:0 10px 26px rgba(14,159,142,.22)}
+  .hero h1{margin:0 0 6px;font-size:20px;letter-spacing:.5px}
+  .hero p{margin:0;font-size:12.5px;opacity:.92}
+  .card{background:var(--card);border-radius:18px;padding:18px;
+    box-shadow:0 2px 10px rgba(21,32,30,.05),0 12px 30px rgba(21,32,30,.04);margin-top:14px}
+  .card h2{margin:0 0 10px;font-size:14px;letter-spacing:.4px}
+  .card p{margin:0 0 8px;font-size:13px;color:#334642}
+  .card p.small{font-size:12px;color:var(--dim)}
+  .meta{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:12.5px;color:#334642}
+  .meta b{color:var(--dim);font-weight:600;white-space:nowrap}
+  .btns{display:flex;flex-direction:column;gap:10px;margin-top:16px}
+  .btn{display:flex;align-items:center;justify-content:center;gap:8px;
+    padding:14px;border-radius:14px;font-size:14.5px;font-weight:600;text-decoration:none;
+    background:var(--brand);color:#fff;box-shadow:0 8px 18px rgba(14,159,142,.24)}
+  .btn:active{transform:translateY(1px)}
+  .btn.ghost{background:#fff;color:var(--brand-d);border:1px solid var(--line);box-shadow:none}
+  .list{margin-top:14px}
+  .item{background:#fff;border-radius:14px;padding:13px 15px;display:flex;justify-content:space-between;
+    align-items:center;gap:10px;margin-bottom:8px;border:1px solid var(--line);text-decoration:none;color:inherit}
+  .item .l{font-size:13.5px}
+  .item .l small{display:block;color:var(--dim);font-size:11.5px;margin-top:2px}
+  .item .r{font-size:12px;color:var(--brand-d);white-space:nowrap}
+  .note{margin-top:18px;font-size:11.5px;color:var(--dim);line-height:1.7}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <a href="/rehab/">← 返回平台</a>
+  </div>
+
+  <div class="hero">
+    <h1>居家康复陪练流程 · 临床审阅稿</h1>
+    <p>v0.9 · 2026 年 11 月 19 日 · 8 套流程 / 70 个病种 / 9 类现场异常</p>
+  </div>
+
+  <div class="card">
+    <h2>这份文档是做什么的</h2>
+    <p>请康复医师、康复治疗师审阅平台上八套陪练流程的<strong>动作安全性、阈值设定、异常识别与边界措辞</strong>。平台只负责执行与记录，不做诊断，不调整医嘱。</p>
+    <p class="small">这不是一份介绍材料，是一份需要被挑错的稿子。审阅通过前，平台不会把流程用于任何真实患者。</p>
+  </div>
+
+  <div class="card">
+    <h2>文档信息</h2>
+    <div class="meta">
+      <b>版本</b><span>v0.9（首版审阅稿）</span>
+      <b>页数</b><span>26 页</span>
+      <b>覆盖</b><span>Brunnstrom 四期、骨科术后、心肺、神经（非偏瘫）、通用</span>
+      <b>附录</b><span>病种—流程对照表、九类现场异常指引卡、版本记录</span>
+      <b>建议用时</b><span>40 至 60 分钟（时间紧可只看阈值清单与异常指引）</span>
+      <b>反馈方式</b><span>在文末反馈表勾选，或直接在文档中批注</span>
+    </div>
+    <div class="btns">
+      <a class="btn" href="/rehab/docs/review-v0.9.pdf" target="_blank" rel="noopener">在线阅读（PDF）</a>
+      <a class="btn ghost" href="/rehab/docs/review-v0.9.docx">下载 Word（可批注）</a>
+    </div>
+    <p class="small" style="margin-top:12px">建议用 Word 版审阅：可以直接在需要改的地方插入批注，改完发回即可。</p>
+  </div>
+
+  <div class="list">
+    <a class="item" href="#keywords">
+      <div class="l">先看哪两处<small>阈值清单（第八部分）与异常指引（附录B），出错代价最大</small></div>
+      <div class="r">优先</div>
+    </a>
+  </div>
+
+  <div class="note" id="keywords">
+    审阅时可以只盯四件事：一、这一步的动作对该病种、该分期是否安全，有没有漏写的禁忌；二、血压、血氧、心率、疼痛、角度这些数值是否该调；三、九类现场异常的判断与处置对不对，有没有该补的情境；四、“不诊断、不治疗”的对外声明有没有越界。
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,16 @@
+# 运行时与临时文件
+.shots/
+.tmp-tool-results/
+*.log
+tmp/
+node_modules/
+
+# 上传与用户数据（线上在 /var/lib/rehab，不进仓库）
+uploads/
+videos/
+reports/
+*.jsonl
+
+# 系统杂项
+.DS_Store
+Thumbs.db

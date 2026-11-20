@@ -1,0 +1,27 @@
+[Unit]
+Description=Rehab realtime booking service
+After=network.target
+
+[Service]
+Type=simple
+User=rehab
+Group=rehab
+WorkingDirectory=/opt/rehab
+ExecStart=/usr/bin/node /opt/rehab/server.js
+Restart=always
+RestartSec=3
+Environment=NODE_ENV=production
+Environment=ORDER_TTL=90
+
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=full
+ProtectHome=yes
+ReadWritePaths=/var/lib/rehab
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=rehab
+
+[Install]
+WantedBy=multi-user.target
