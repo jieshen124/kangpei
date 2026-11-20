@@ -75,3 +75,27 @@ journalctl -u rehab -f
 ## 版本
 
 - v0.9（2026-11-20）：病种扩至 70 项，通用流程拆为骨科术后 / 心肺 / 神经三套，新增临床审阅稿与文档页。
+
+## 版本管理
+
+仓库已关联云主机上的裸仓库：`ssh://root@103.236.73.76:40851/opt/git/rehab.git`
+
+```bash
+git add -A && git commit -m "改了什么"
+git push                      # 推到云主机备份
+git tag v1.0 && git push --tags
+```
+
+回滚到某个版本：
+
+```bash
+git log --oneline            # 找到目标提交
+git checkout <hash> -- rehab/server.js
+./rehab/deploy.sh            # 重新部署
+```
+
+新机器拉取全部历史：
+
+```bash
+git clone ssh://root@103.236.73.76:40851/opt/git/rehab.git
+```
