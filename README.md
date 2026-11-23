@@ -78,12 +78,16 @@ journalctl -u rehab -f
 
 ## 版本管理
 
-仓库已关联云主机上的裸仓库：`ssh://root@103.236.73.76:40851/opt/git/rehab.git`
+远端两处，内容一致：
+
+| 名称 | 地址 | 用途 |
+|---|---|---|
+| origin | https://github.com/jieshen124/kangpei | 主仓库（GitHub 私有） |
+| cloud | ssh://root@103.236.73.76:40851/opt/git/rehab.git | 云主机上的裸仓库备份 |
 
 ```bash
-git add -A && git commit -m "改了什么"
-git push                      # 推到云主机备份
-git tag v1.0 && git push --tags
+git push origin main && git push cloud main
+git tag v1.0 && git push origin v1.0 && git push cloud v1.0
 ```
 
 回滚到某个版本：
@@ -94,8 +98,8 @@ git checkout <hash> -- rehab/server.js
 ./rehab/deploy.sh            # 重新部署
 ```
 
-新机器拉取全部历史：
+新机器拉取（需先获得仓库邀请或使用自己的凭据）：
 
 ```bash
-git clone ssh://root@103.236.73.76:40851/opt/git/rehab.git
+git clone https://github.com/jieshen124/kangpei.git
 ```
