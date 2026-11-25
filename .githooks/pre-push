@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# 阻止直接推送到主干分支（main / master）
+# 需要临时绕过时：ALLOW_MAIN=1 git push origin main
+set -euo pipefail
+
+remote="$1"
+url="$2"
+blocked=0
+
+# 云主机上的裸仓库是备份，允许它接收 main（用于镜像，不代表发布）
+case "$url" in
+  *"/opt/git/"*) exit 0 ;;
+esac
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+  case "$remote_ref" in
+    refs/heads/main|refs/heads/master)
+      blocked=1
+      echo "✗ 拒绝直接推送到 $remote_ref（远端：$url）" >&2
+      ;;
+  esac
+done
+
+if [ "$blocked" = "1" ] && [ "${ALLOW_MAIN:-0}" != "1" ]; then
+  cat >&2 <<'MSG'
+
+主干分支不允许直接 push。请走这个流程：
+
+  1) git checkout -b fix/你的改动
+  2) git add -A && git commit -m "改了什么"
+  3) git push -u origin fix/你的改动
+  4) 在 GitHub 上开 Pull Request，合并进 main
+
+确需临时绕过（谨慎）：ALLOW_MAIN=1 git push origin main
+MSG
+  exit 1
+fi
+exit 0
