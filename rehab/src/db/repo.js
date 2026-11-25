@@ -118,39 +118,76 @@ function importLegacy(dir) {
 
 /* ------------------------------------------------------------------ 写入 */
 
+/**
+ * 写前比对：内存里保留每行上次写入的 JSON，内容没变就跳过。
+ * 原来每次 broadcastAll 都会把 400 预约 + 500 量表 + 1000 预警全量重写（约 100ms），
+ * 加了这层之后，单次操作通常只写 1 行。
+ */
+const cache = {
+  users: new Map(),
+  bookings: new Map(),
+  scales: new Map(),
+  alerts: new Map(),
+  assessments: new Map(),
+  reports: new Map(),
+  flows: new Map(),
+  videos: new Map(),
+};
+
+function changed(table, id, json) {
+  const c = cache[table];
+  if (c.get(id) === json) return false;
+  c.set(id, json);
+  return true;
+}
+
 function putBooking(d, b) {
+  const json = JSON.stringify(b);
+  if (!changed('bookings', b.id, json)) return;
   d.run('INSERT OR REPLACE INTO bookings (id, patient, supervisor, status, updated_at, data) VALUES (?, ?, ?, ?, ?, ?)',
-    [b.id, b.patient || '', b.supervisor || '', b.status || '', Number(b.updatedAt || b.createdAt || 0), JSON.stringify(b)]);
+    [b.id, b.patient || '', b.supervisor || '', b.status || '', Number(b.updatedAt || b.createdAt || 0), json]);
 }
 
 function putScale(d, s) {
+  const json = JSON.stringify(s);
+  if (!changed('scales', s.id, json)) return;
   d.run('INSERT OR REPLACE INTO scales (id, patient, supervisor, created_at, data) VALUES (?, ?, ?, ?, ?)',
-    [s.id, s.patient || '', s.supervisor || '', Number(s.createdAt || 0), JSON.stringify(s)]);
+    [s.id, s.patient || '', s.supervisor || '', Number(s.createdAt || 0), json]);
 }
 
 function putAssessment(d, a) {
+  const json = JSON.stringify(a);
+  if (!changed('assessments', a.id, json)) return;
   d.run('INSERT OR REPLACE INTO assessments (id, patient, supervisor, type, created_at, data) VALUES (?, ?, ?, ?, ?, ?)',
-    [a.id, a.patient || '', a.supervisor || '', a.type || '', Number(a.createdAt || 0), JSON.stringify(a)]);
+    [a.id, a.patient || '', a.supervisor || '', a.type || '', Number(a.createdAt || 0), json]);
 }
 
 function putAlert(d, a) {
+  const json = JSON.stringify(a);
+  if (!changed('alerts', a.id, json)) return;
   d.run('INSERT OR REPLACE INTO alerts (id, patient, level, created_at, data) VALUES (?, ?, ?, ?, ?)',
-    [a.id, a.patient || '', a.level || '', Number(a.createdAt || 0), JSON.stringify(a)]);
+    [a.id, a.patient || '', a.level || '', Number(a.createdAt || 0), json]);
 }
 
 function putReport(d, r) {
+  const json = JSON.stringify(r);
+  if (!changed('reports', r.id, json)) return;
   d.run('INSERT OR REPLACE INTO reports (id, patient, uploader, created_at, data) VALUES (?, ?, ?, ?, ?)',
-    [r.id, r.patient || '', r.uploader || '', Number(r.createdAt || 0), JSON.stringify(r)]);
+    [r.id, r.patient || '', r.uploader || '', Number(r.createdAt || 0), json]);
 }
 
 function putFlow(d, f) {
+  const json = JSON.stringify(f);
+  if (!changed('flows', f.id, json)) return;
   d.run('INSERT OR REPLACE INTO flows (id, patient, supervisor, status, started_at, data) VALUES (?, ?, ?, ?, ?, ?)',
-    [f.id, f.patient || '', f.supervisor || '', f.status || '', Number(f.startedAt || 0), JSON.stringify(f)]);
+    [f.id, f.patient || '', f.supervisor || '', f.status || '', Number(f.startedAt || 0), json]);
 }
 
 function putVideo(d, v) {
+  const json = JSON.stringify(v);
+  if (!changed('videos', v.id, json)) return;
   d.run('INSERT OR REPLACE INTO videos (id, course_id, uploaded_at, data) VALUES (?, ?, ?, ?)',
-    [v.id, v.courseId || '', Number(v.uploadedAt || 0), JSON.stringify(v)]);
+    [v.id, v.courseId || '', Number(v.uploadedAt || 0), json]);
 }
 
 /** 用户表：整表同步（账号量很小，语义与原来的 saveUsers() 一致） */
@@ -160,13 +197,18 @@ function saveUsers(users) {
     const names = new Set();
     for (const [name, u] of Object.entries(users)) {
       names.add(name);
+      const json = JSON.stringify(u);
+      cache.users.set(name, json);
       d.run('INSERT OR REPLACE INTO users (name, role, data, created_at) VALUES (?, ?, ?, ?)',
-        [name, String(u.role || 'patient'), JSON.stringify(u), Number(u.createdAt || 0)]);
+        [name, String(u.role || 'patient'), json, Number(u.createdAt || 0)]);
     }
     // 删除已不存在的账号（原来整文件覆盖写天然具备这个语义）
     const rows = d.all('SELECT name FROM users', []);
     for (const r of rows) {
-      if (!names.has(r.name)) d.run('DELETE FROM users WHERE name = ?', [r.name]);
+      if (!names.has(r.name)) {
+        d.run('DELETE FROM users WHERE name = ?', [r.name]);
+        cache.users.delete(r.name);
+      }
     }
   });
 }
@@ -220,30 +262,44 @@ function parseRows(rows) {
 }
 
 /** 只把最近 N 条载入内存；完整历史仍留在库里 */
-function tail(sql, params, limit) {
+function tail(table, sql, params, limit) {
   const rows = dbmod.get().all(sql + ' ORDER BY rowid DESC LIMIT ?', params.concat([limit]));
-  return parseRows(rows).reverse();
+  const out = [];
+  for (const r of rows) {
+    try {
+      const o = JSON.parse(r.data);
+      if (o && o.id) { cache[table].set(o.id, r.data); out.push(o); }
+    } catch (e) { /* 跳过坏行 */ }
+  }
+  return out.reverse();
 }
 
 function loadUsers() {
   const rows = dbmod.get().all('SELECT name, data FROM users', []);
   const out = {};
   for (const r of rows) {
-    try { out[r.name] = JSON.parse(r.data); } catch (e) { /* 跳过坏行 */ }
+    try { out[r.name] = JSON.parse(r.data); cache.users.set(r.name, r.data); } catch (e) { /* 跳过坏行 */ }
   }
   return out;
 }
 
-function loadBookings(limit = 400) { return tail('SELECT data FROM bookings', [], limit); }
-function loadScales(limit = 500) { return tail('SELECT data FROM scales', [], limit); }
-function loadAlerts(limit = 1000) { return tail('SELECT data FROM alerts', [], limit); }
-function loadAssessments(limit = 500) { return tail('SELECT data FROM assessments', [], limit); }
-function loadFlows(limit = 800) { return tail('SELECT data FROM flows', [], limit); }
-function loadReports(limit = 1000) { return tail('SELECT data FROM reports', [], limit); }
+function loadBookings(limit = 400) { return tail('bookings', 'SELECT id, data FROM bookings', [], limit); }
+function loadScales(limit = 500) { return tail('scales', 'SELECT id, data FROM scales', [], limit); }
+function loadAlerts(limit = 1000) { return tail('alerts', 'SELECT id, data FROM alerts', [], limit); }
+function loadAssessments(limit = 500) { return tail('assessments', 'SELECT id, data FROM assessments', [], limit); }
+function loadFlows(limit = 800) { return tail('flows', 'SELECT id, data FROM flows', [], limit); }
+function loadReports(limit = 1000) { return tail('reports', 'SELECT id, data FROM reports', [], limit); }
 
 function loadVideos() {
-  const rows = dbmod.get().all('SELECT data FROM videos', []);
-  return parseRows(rows);
+  const rows = dbmod.get().all('SELECT id, data FROM videos', []);
+  const out = [];
+  for (const r of rows) {
+    try {
+      const o = JSON.parse(r.data);
+      if (o) { cache.videos.set(o.id, r.data); out.push(o); }
+    } catch (e) { /* 跳过坏行 */ }
+  }
+  return out;
 }
 
 function loadWatch() {
