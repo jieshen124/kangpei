@@ -20,272 +20,45 @@ const path = require('path');
 const crypto = require('crypto');
 const { WebSocketServer } = require('ws');
 
-const PORT = Number(process.env.PORT || 3001);
-const HOST = '127.0.0.1';
-const BASE = '/rehab';
-const DATA_DIR = process.env.DATA_DIR || '/var/lib/rehab';
-const PUBLIC_DIR = path.join(__dirname, 'public');
-const SESSION_TTL = 7 * 24 * 3600 * 1000;
-const MAX_BODY = 16 * 1024;
-// 测试阶段：默认开启免登录模式（设置 TEST_MODE=0 可恢复正式登录）
-const TEST_MODE = process.env.TEST_MODE !== '0';
+const cfg = require('./src/config');
+const {
+  PORT, HOST, BASE, DATA_DIR, PUBLIC_DIR, SESSION_TTL, MAX_BODY, TEST_MODE, DB_FILE,
+} = cfg;
 
-const AREAS = [
-  '东城区', '西城区', '朝阳区', '海淀区', '丰台区', '石景山区',
-  '通州区', '昌平区', '大兴区', '顺义区', '房山区', '门头沟区',
-  '平谷区', '怀柔区', '密云区', '延庆区',
-];
+const repo = require('./src/db/repo');
+const access = require('./src/middleware/access');
+const routeTable = require('./src/routes');
+const { json, readJson, parseCookies } = require('./src/lib/http');
 
-const SLOTS = [
-  { id: 'am', label: '上午 09:00–11:00' },
-  { id: 'pm', label: '下午 14:00–16:00' },
-  { id: 'ev', label: '晚间 19:00–21:00' },
-];
+// 打开数据库：首次启动会把历史 JSON 数据一次性导入，之后只读写 SQLite
+repo.init(DB_FILE, DATA_DIR);
 
-const FOCUS = ['关节活动度训练', '肌力训练', '平衡与步态', '心肺耐力', '日常生活能力', '术后恢复训练'];
-
-/* ------------------------------------------------------ 卒中量表工具箱 */
-const o = (v, l) => ({ v, l });
-
-const BARTHEL_OPTS = {
-  a: [o(0, '完全依赖'), o(5, '需部分帮助'), o(10, '完全独立')],          // 进食/穿衣/如厕
-  b: [o(0, '完全依赖'), o(5, '完全独立')],                                // 洗澡/修饰
-  c: [o(0, '完全失禁'), o(5, '偶尔失禁'), o(10, '能控制')],              // 大便/小便
-  d: [o(0, '完全依赖'), o(5, '需大量帮助'), o(10, '需少量帮助'), o(15, '完全独立')], // 转移/行走
-  e: [o(0, '不能'), o(5, '需帮助'), o(10, '完全独立')],                  // 上下楼梯
-};
-
-const MOTOR_OPTS = [o(1, 'Ⅰ 无随意运动'), o(2, 'Ⅱ 出现联合反应'), o(3, 'Ⅲ 共同运动'), o(4, 'Ⅳ 分离运动'), o(5, 'Ⅴ 分离运动完善'), o(6, 'Ⅵ 接近正常')];
-
-const BERG_OPTS = [o(0, '不能完成'), o(1, '需大量帮助'), o(2, '需中等帮助'), o(3, '需少量帮助'), o(4, '独立完成')];
-
-const TOOLBOX = [
-  {
-    key: 'barthel', name: 'Barthel 指数', short: '自理能力', desc: '10 项日常生活能力，满分 100 分', score: 'sum', totalMax: 100,
-    items: [
-      { k: 'feeding', label: '进食', opts: BARTHEL_OPTS.a },
-      { k: 'bathing', label: '洗澡', opts: BARTHEL_OPTS.b },
-      { k: 'grooming', label: '修饰（洗脸刷牙）', opts: BARTHEL_OPTS.b },
-      { k: 'dressing', label: '穿衣', opts: BARTHEL_OPTS.a },
-      { k: 'bowel', label: '控制大便', opts: BARTHEL_OPTS.c },
-      { k: 'bladder', label: '控制小便', opts: BARTHEL_OPTS.c },
-      { k: 'toilet', label: '如厕', opts: BARTHEL_OPTS.a },
-      { k: 'transfer', label: '床椅转移', opts: BARTHEL_OPTS.d },
-      { k: 'walking', label: '平地行走', opts: BARTHEL_OPTS.d },
-      { k: 'stairs', label: '上下楼梯', opts: BARTHEL_OPTS.e },
-    ],
-  },
-  {
-    key: 'mrs', name: 'mRS 改良 Rankin 量表', short: '残障分级', desc: '0-6 分，越低越好', score: 'sum', totalMax: 6,
-    items: [{
-      k: 'level', label: '当前残障等级',
-      opts: [o(0, '0 完全无症状'), o(1, '1 无明显残障，能完成日常'), o(2, '2 轻度残障，不能完成原有活动'),
-        o(3, '3 中度残障，可独立行走'), o(4, '4 中重度残障，行走需帮助'), o(5, '5 重度残障，卧床/失禁'),
-        o(6, '6 死亡')],
-    }],
-  },
-  {
-    key: 'brunnstrom', name: 'Brunnstrom 分期', short: '偏瘫运动恢复', desc: 'Ⅰ-Ⅵ 期，按上肢/手/下肢分别记录', score: 'none',
-    items: [
-      { k: 'upper', label: '上肢', opts: MOTOR_OPTS },
-      { k: 'hand', label: '手', opts: MOTOR_OPTS },
-      { k: 'lower', label: '下肢', opts: MOTOR_OPTS },
-    ],
-  },
-  {
-    key: 'berg', name: 'Berg 平衡量表', short: '平衡', desc: '14 项，满分 56 分，需现场看护下完成', score: 'sum', totalMax: 56,
-    items: [
-      { k: 'sit2stand', label: '从坐到站', opts: BERG_OPTS },
-      { k: 'stand_unsup', label: '无支撑站立', opts: BERG_OPTS },
-      { k: 'sit_unsup', label: '无支撑坐位', opts: BERG_OPTS },
-      { k: 'stand2sit', label: '从站到坐', opts: BERG_OPTS },
-      { k: 'transfer', label: '床椅转移', opts: BERG_OPTS },
-      { k: 'stand_eyes', label: '闭眼站立', opts: BERG_OPTS },
-      { k: 'stand_feet', label: '双足并拢站立', opts: BERG_OPTS },
-      { k: 'reach', label: '站立位上肢前伸', opts: BERG_OPTS },
-      { k: 'pickup', label: '站立位从地上拾物', opts: BERG_OPTS },
-      { k: 'turn_head', label: '转身向后看', opts: BERG_OPTS },
-      { k: 'turn360', label: '360° 转身', opts: BERG_OPTS },
-      { k: 'stool', label: '踏凳（单足踏台阶）', opts: BERG_OPTS },
-      { k: 'tandem', label: '双足前后站立', opts: BERG_OPTS },
-      { k: 'one_leg', label: '单腿站立', opts: BERG_OPTS },
-    ],
-  },
-  {
-    key: 'holden', name: 'Holden 步行能力分级', short: '步行', desc: '0-5 级', score: 'sum', totalMax: 5,
-    items: [{
-      k: 'level', label: '步行能力',
-      opts: [o(0, '0 不能步行（需轮椅）'), o(1, '1 室内需辅助步行'), o(2, '2 室内独立步行'),
-        o(3, '3 监护下步行'), o(4, '4 平地独立步行'), o(5, '5 独立步行，可上下台阶')],
-    }],
-  },
-  {
-    key: 'ashworth', name: '改良 Ashworth 肌张力', short: '肌张力', desc: '按肌群记录 0-4 级', score: 'none',
-    items: [
-      { k: 'elbow_flex', label: '屈肘肌群', opts: [o(0, '0 无增高'), o(1, '1 轻微增高'), o(2, '2 明显增高'), o(3, '3 显著增高'), o(4, '4 僵硬')] },
-      { k: 'elbow_ext', label: '伸肘肌群', opts: [o(0, '0 无增高'), o(1, '1 轻微增高'), o(2, '2 明显增高'), o(3, '3 显著增高'), o(4, '4 僵硬')] },
-      { k: 'wrist', label: '腕屈肌群', opts: [o(0, '0 无增高'), o(1, '1 轻微增高'), o(2, '2 明显增高'), o(3, '3 显著增高'), o(4, '4 僵硬')] },
-      { k: 'knee', label: '屈膝肌群', opts: [o(0, '0 无增高'), o(1, '1 轻微增高'), o(2, '2 明显增高'), o(3, '3 显著增高'), o(4, '4 僵硬')] },
-      { k: 'ankle', label: '踝跖屈肌群', opts: [o(0, '0 无增高'), o(1, '1 轻微增高'), o(2, '2 明显增高'), o(3, '3 显著增高'), o(4, '4 僵硬')] },
-    ],
-  },
-  {
-    key: 'phq9', name: 'PHQ-9 情绪量表', short: '情绪', desc: '9 项，满分 27 分，≥10 分提示需关注', score: 'sum', totalMax: 27,
-    items: [
-      { k: 'q1', label: '做事提不起兴趣', opts: [o(0, '完全不会'), o(1, '几天'), o(2, '一半以上时间'), o(3, '几乎每天')] },
-      { k: 'q2', label: '感到心情低落', opts: [o(0, '完全不会'), o(1, '几天'), o(2, '一半以上时间'), o(3, '几乎每天')] },
-      { k: 'q3', label: '入睡困难或睡不醒', opts: [o(0, '完全不会'), o(1, '几天'), o(2, '一半以上时间'), o(3, '几乎每天')] },
-      { k: 'q4', label: '感到疲倦、没力气', opts: [o(0, '完全不会'), o(1, '几天'), o(2, '一半以上时间'), o(3, '几乎每天')] },
-      { k: 'q5', label: '食欲差或暴食', opts: [o(0, '完全不会'), o(1, '几天'), o(2, '一半以上时间'), o(3, '几乎每天')] },
-      { k: 'q6', label: '自我评价低', opts: [o(0, '完全不会'), o(1, '几天'), o(2, '一半以上时间'), o(3, '几乎每天')] },
-      { k: 'q7', label: '注意力不集中', opts: [o(0, '完全不会'), o(1, '几天'), o(2, '一半以上时间'), o(3, '几乎每天')] },
-      { k: 'q8', label: '动作或说话迟缓/烦躁', opts: [o(0, '完全不会'), o(1, '几天'), o(2, '一半以上时间'), o(3, '几乎每天')] },
-      { k: 'q9', label: '有自伤念头', opts: [o(0, '完全不会'), o(1, '几天'), o(2, '一半以上时间'), o(3, '几乎每天')] },
-    ],
-  },
-];
-
-const SCALE_BY_KEY = TOOLBOX.reduce((acc, s) => { acc[s.key] = s; return acc; }, {});
-
-const STROKE_TYPES = ['缺血性（脑梗）', '出血性（脑出血/蛛网膜下腔）', '未明确'];
-const STROKE_SIDES = ['左侧偏瘫', '右侧偏瘫', '双侧', '无明显偏瘫'];
-const DEFICITS = ['失语', '构音障碍', '吞咽困难', '认知障碍', '情绪低落', '肩痛', '足下垂', '平衡障碍', '感觉障碍'];
-
-// 病种目录（按系统/部位分组，覆盖居家康复常见情形）
-const CONDITIONS = [
-  {
-    group: '神经系统',
-    items: [
-      '脑卒中（脑梗）', '脑出血', '脑外伤术后', '脑肿瘤术后',
-      '脊髓损伤（颈段）', '脊髓损伤（胸腰段）',
-      '帕金森病', '帕金森综合征 / 多系统萎缩',
-      '多发性硬化', '格林-巴利综合征恢复期',
-      '周围性面瘫（面神经炎）', '小脑共济失调',
-      '认知障碍 / 痴呆', '脊髓灰质炎后遗症',
-      '臂丛神经损伤', '桡神经 / 尺神经损伤', '坐骨神经损伤',
-    ],
-  },
-  {
-    group: '骨与关节',
-    items: [
-      '髋关节置换术后', '膝关节置换术后', '肩关节置换术后',
-      '股骨颈 / 粗隆间骨折术后', '四肢骨折术后', '骨盆骨折术后',
-      '脊柱骨折 / 椎体压缩骨折',
-      '腰椎间盘突出', '腰椎管狭窄 / 腰椎术后', '颈椎病 / 颈椎术后',
-      '肩袖损伤', '肩周炎（冻结肩）',
-      '网球肘 / 高尔夫球肘', '腕管综合征 / 腱鞘炎',
-      '膝骨关节炎', '类风湿关节炎', '强直性脊柱炎',
-      '半月板 / 交叉韧带术后', '跟腱断裂术后', '足底筋膜炎 / 拇外翻术后',
-      '手外伤 / 肌腱修复术后', '截肢术后（假肢适配）',
-      '烧伤后瘢痕与关节挛缩',
-    ],
-  },
-  {
-    group: '心肺',
-    items: [
-      '冠心病 / 支架术后', '冠脉搭桥术后', '心衰稳定期',
-      '心脏起搏器 / 除颤器植入后',
-      '慢阻肺（COPD）', '肺纤维化', '肺部感染后 / 术后肺康复',
-      '支气管扩张', '长期卧床脱机困难',
-    ],
-  },
-  {
-    group: '内科与代谢',
-    items: [
-      '糖尿病周围神经病变', '糖尿病足（创面愈合期）', '透析患者运动康复',
-      '肿瘤术后 / 放化疗后康复', '癌性疲乏', '重症后综合征（ICU 后）',
-      '长期卧床 / 失用综合征', '贫血 / 营养不良性衰弱',
-      '带状疱疹后神经痛', '感染后疲乏',
-    ],
-  },
-  {
-    group: '老年与功能衰退',
-    items: [
-      '老年衰弱 / 跌倒高风险', '失能老人日常照护',
-      '吞咽障碍（老年）', '尿失禁 / 盆底功能训练', '骨质疏松（运动管理）',
-    ],
-  },
-  {
-    group: '儿童',
-    items: ['脑瘫（儿童）', '发育迟缓', '脊柱侧弯', '先天性肌性斜颈', '臂丛神经产伤'],
-  },
-  {
-    group: '其他',
-    items: ['其他（在备注里说明）'],
-  },
-];
-const CONDITION_FLAT = CONDITIONS.reduce((a, g) => a.concat(g.items), []);
-
-// 病种对应的默认流程：0/1/2/3 为 Brunnstrom 分期，o 骨科，c 心肺，n 神经，g 通用
-const GROUP_PROGRAM = {
-  '神经系统': 'n', '骨与关节': 'o', '心肺': 'c',
-  '内科与代谢': 'g', '老年与功能衰退': 'g', '儿童': 'n', '其他': 'g',
-};
-const CONDITION_PROGRAM = {};
-CONDITIONS.forEach((g) => g.items.forEach((it) => { CONDITION_PROGRAM[it] = GROUP_PROGRAM[g.group] || 'g'; }));
-// 偏瘫相关走 Brunnstrom
-['脑卒中（脑梗）', '脑出血', '脑外伤术后', '脑肿瘤术后'].forEach((c) => { CONDITION_PROGRAM[c] = '0'; });
-// 个别病种单独归口
-CONDITION_PROGRAM['糖尿病周围神经病变'] = 'n';
-CONDITION_PROGRAM['糖尿病足（创面愈合期）'] = 'o';
-CONDITION_PROGRAM['长期卧床 / 失用综合征'] = 'n';
-CONDITION_PROGRAM['重症后综合征（ICU 后）'] = 'c';
-CONDITION_PROGRAM['带状疱疹后神经痛'] = 'g';
-
-// 只有这些偏瘫相关病种才适合 Brunnstrom 分期流程
-const BRUNNSTROM_CONDITIONS = ['脑卒中（脑梗）', '脑出血', '脑外伤术后', '脑肿瘤术后'];
-const NEURO_CONDITIONS = ['脑卒中（脑梗）', '脑出血', '脑外伤术后', '脑肿瘤术后', '脊髓损伤（颈段）', '脊髓损伤（胸腰段）', '帕金森病', '帕金森综合征 / 多系统萎缩', '多发性硬化'];
-
-// 主诉目录：用患者自己的话，不用专业术语
-const CONCERNS = [
-  '走路不稳、容易摔',
-  '一侧胳膊抬不起来',
-  '手指抓不住东西、扣不上扣子',
-  '说话不清楚',
-  '吃饭容易呛、吞咽费劲',
-  '肩膀疼、夜里疼醒',
-  '腿没劲、站不了多久',
-  '上下楼梯费劲',
-  '穿衣洗澡要人帮',
-  '上厕所不方便',
-  '手脚肿',
-  '一动就喘、容易累',
-  '睡不好、情绪低落',
-  '记性差、容易忘事',
-  '腰背疼、坐不住',
-];
+const {
+  AREAS, SLOTS, FOCUS, BARTHEL_OPTS, MOTOR_OPTS, BERG_OPTS,
+  TOOLBOX, SCALE_BY_KEY, STROKE_TYPES, STROKE_SIDES, DEFICITS,
+  CONDITIONS, CONDITION_FLAT, GROUP_PROGRAM, CONDITION_PROGRAM,
+  BRUNNSTROM_CONDITIONS, NEURO_CONDITIONS, CONCERNS,
+} = require("./src/data/catalog");
 
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
 
 /* ---------------------------------------------------------------- 账号 */
-const USERS_FILE = path.join(DATA_DIR, 'users.json');
-const BOOK_FILE = path.join(DATA_DIR, 'bookings.jsonl');
-const SCALE_FILE = path.join(DATA_DIR, 'scales.jsonl');
-
-let users = {};
-try { users = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8')) || {}; } catch (e) { users = {}; }
+let users = repo.loadUsers();
 
 // 兼容 v1 账号角色命名：user -> patient, therapist -> supervisor
 (() => {
   let changed = false;
-  for (const [name, u] of Object.entries(users)) {
+  for (const [, u] of Object.entries(users)) {
     if (u.role === 'user') { u.role = 'patient'; changed = true; }
     if (u.role === 'therapist') { u.role = 'supervisor'; u.areas = u.areas || []; changed = true; }
     if (!Array.isArray(u.areas)) { u.areas = []; changed = true; }
   }
-  if (changed) {
-    const tmp = USERS_FILE + '.mig';
-    fs.writeFileSync(tmp, JSON.stringify(users, null, 2), { mode: 0o600 });
-    fs.renameSync(tmp, USERS_FILE);
-  }
+  if (changed) repo.saveUsers(users);
 })();
 
-function saveUsers() {
-  const tmp = USERS_FILE + '.tmp';
-  fs.writeFileSync(tmp, JSON.stringify(users, null, 2), { mode: 0o600 });
-  fs.renameSync(tmp, USERS_FILE);
-}
+// 账号表整表同步（账号量很小，语义与原 saveUsers() 一致）
+function saveUsers() { repo.saveUsers(users); }
 
 function hashPwd(pw, salt) { return crypto.scryptSync(pw, salt, 64).toString('hex'); }
 
@@ -313,7 +86,6 @@ let scales = [];
 let scaleSeq = 0;
 
 /* ------------------------------------------------------ 专项量表（工具箱） */
-const ASSESS_FILE = path.join(DATA_DIR, 'assessments.jsonl');
 let assessments = [];
 let assessSeq = 0;
 
@@ -355,7 +127,6 @@ function buildAssessment(supervisor, patient, type, input) {
   };
   assessments.push(a);
   if (assessments.length > 800) assessments = assessments.slice(-800);
-  fs.appendFile(ASSESS_FILE, JSON.stringify(a) + '\n', () => {});
   evaluateAssessAlerts(patient, a, prevSame || null);
   return a;
 }
@@ -410,7 +181,6 @@ function createBooking(patient, body) {
   };
   pushTimeline(b, '患者发起预约，等待监督者确认');
   bookings.push(b);
-  fs.appendFile(BOOK_FILE, JSON.stringify({ event: 'create', b, ts: now }) + '\n', () => {});
   return b;
 }
 
@@ -492,13 +262,11 @@ function buildScale(supervisor, patient, input, bookingId) {
   };
   scales.push(s);
   if (scales.length > 500) scales = scales.slice(-500);
-  fs.appendFile(SCALE_FILE, JSON.stringify(s) + '\n', () => {});
   evaluateScaleAlerts(patient, s, prev || null);
   return s;
 }
 
 /* ------------------------------------------------------ 异常预警 */
-const ALERT_FILE = path.join(DATA_DIR, 'alerts.jsonl');
 let alerts = [];
 let alertSeq = 0;
 
@@ -511,7 +279,6 @@ function pushAlert(patient, level, key, title, detail) {
   };
   alerts.push(a);
   if (alerts.length > 1000) alerts = alerts.slice(-1000);
-  fs.appendFile(ALERT_FILE, JSON.stringify(a) + '\n', () => {});
   return a;
 }
 
@@ -552,104 +319,12 @@ function evaluateAssessAlerts(patient, a, prevSame) {
 }
 
 /* ------------------------------------------------------ 监督者培训课程 */
-const COURSES = [
-  {
-    id: 'c1', title: '卒中基础认知与角色边界', minutes: 25,
-    points: [
-      '脑卒中分缺血性（脑梗）和出血性，恢复期通常以月计，训练靠日积月累，不存在"练几次就好"。',
-      '常见后遗症：一侧肢体无力（偏瘫）、说话不清或听不懂（失语）、吞咽容易呛、走路不稳、情绪低落。',
-      '你的角色是「训练陪伴 + 监督 + 记录」，不是治疗者：不做诊断、不判断病情好坏、不调整用药、不推荐保健品。',
-      '训练强度要跟着患者当天状态走：疲劳、疼痛、情绪差时减量，不能为了完成计划硬顶。',
-      '一切以主治医生和康复治疗师的方案为准，你的方案参考只是"今天练什么"的提示。',
-    ],
-    quiz: [
-      { q: '患者家属问"你看他这样还能恢复吗"，正确做法是？', opts: ['根据经验给出乐观或悲观的判断', '说明自己不做病情判断，建议问主治医生', '说"肯定能好"让家属安心'], a: 1 },
-      { q: '训练当天患者说头晕、没力气，你应该？', opts: ['按原计划练完，不能半途而废', '降低强度或改为被动活动，并记录情况', '直接结束服务且不记录'], a: 1 },
-      { q: '以下哪项属于你的职责范围？', opts: ['调整降压药用量', '带练动作、监督完成、填写记录', '判断偏瘫能否恢复'], a: 1 },
-    ],
-  },
-  {
-    id: 'c2', title: '良肢位摆放与体位转移', minutes: 35,
-    points: [
-      '良肢位是为了防关节僵硬、防压疮、防肩痛，仰卧、患侧卧、健侧卧轮换，每 2 小时左右更换一次。',
-      '仰卧时患侧肩下垫薄枕、手臂略外展；患侧卧时患肩前伸、不压在身上。',
-      '翻身要托住患侧肩和髋，不能拽着患侧上肢拉人，容易造成肩关节半脱位和肩痛。',
-      '床到椅转移：先让患者双脚踩实，身体前倾，健手扶稳，你站在患侧保护，不要从正面硬抱。',
-      '全程防跌倒：地面无水、鞋要防滑、助行器位置放好，患者站起时你必须在患侧一手可及的范围。',
-    ],
-    quiz: [
-      { q: '帮患者翻身时，正确做法是？', opts: ['拉住患侧手臂翻转', '托住患侧肩和髋部翻转', '让患者自己抓床沿硬翻'], a: 1 },
-      { q: '床到椅转移时你应站在？', opts: ['患者正前方抱住', '患者患侧，随时可扶', '患者背后推'], a: 1 },
-      { q: '良肢位摆放的主要目的不包括？', opts: ['预防关节僵硬与压疮', '预防肩痛', '替代康复训练'], a: 2 },
-    ],
-  },
-  {
-    id: 'c3', title: '按分期带练训练动作', minutes: 35,
-    points: [
-      'Ⅰ-Ⅱ 期以被动活动、良肢位、床上桥式为主，动作慢、幅度小，全程无痛范围。',
-      'Ⅲ 期重点是诱发分离动作：双手交叉前伸、肘支撑、患手触肩触口、坐站转移。',
-      'Ⅳ-Ⅴ 期练分离运动与平衡：屈肘、旋前旋后、腕背伸、抓放、重心转移、单腿支撑。',
-      'Ⅵ 期练功能与耐力：弹力带抗阻、精细手功能、转身跨越、上下台阶、连续步行。',
-      '带练口令要短、慢、清楚；每组之间必须休息；患者说疼就停，记录疼痛位置和程度。',
-    ],
-    quiz: [
-      { q: 'Ⅲ 期训练的重点是？', opts: ['大重量抗阻', '诱发分离动作，打破共同运动', '长时间快走'], a: 1 },
-      { q: '带练中患者说"疼"，正确做法是？', opts: ['让他忍一下继续', '立即停止该动作，记录位置和程度', '加大幅度活动开'], a: 1 },
-      { q: '关于组间休息？', opts: ['尽量不休息提高效率', '每组之间必须安排休息', '只有患者要求才休息'], a: 1 },
-    ],
-  },
-  {
-    id: 'c4', title: '量表填写与记录规范', minutes: 25,
-    points: [
-      '每日量表四项：疼痛 VAS、训练完成度、肌力 MMT、疲劳程度，全部按当天实际情况点选。',
-      '记录要客观：写"左膝屈曲到 90° 时诉痛 6 分"，不写"恢复得不错"这类评价。',
-      '勾选"异常"时必须写清楚发生了什么、什么时候、当时在做什么。',
-      '不能替患者美化数据，也不能凭印象估分；当天没做就不填。',
-      '所有记录会同步给家属和平台，属于服务凭证，编造会被追责并取消资格。',
-    ],
-    quiz: [
-      { q: '量表记录应该怎么写？', opts: ['"今天表现不错"', '"左膝屈曲到 90° 时诉痛 6 分"', '凭感觉估个大概分'], a: 1 },
-      { q: '勾了"训练中出现异常"后？', opts: ['可以不填说明', '必须写清楚发生什么、何时、在做什么', '等下次再补'], a: 1 },
-      { q: '没有完成的训练项目应该？', opts: ['按计划填满分保持好看', '按实际完成情况填写', '直接整个量表不填'], a: 1 },
-    ],
-  },
-  {
-    id: 'c5', title: '异常识别与应急处置', minutes: 30,
-    points: [
-      '立刻停止训练并拨打 120 的红线：胸痛胸闷、呼吸困难、意识模糊或叫不醒、突然说话不清或一侧无力加重、剧烈头痛、抽搐、跌倒撞到头部。',
-      '同时做三件事：让患者平躺或侧卧（呕吐时侧卧防呛）、解开领口、立刻联系家属并上报平台。',
-      '你不得给患者服用任何药物、不得做推拿复位、不得判断"没事"，一切等急救人员。',
-      '轻微情况（训练后肌肉酸痛、轻度疲劳）可以减量并记录，但持续加重必须上报。',
-      '每次服务结束前，确认患者状态平稳、家门锁好、家属知情后才能离开。',
-    ],
-    quiz: [
-      { q: '训练中患者突然说话不清、一侧无力加重，你应该？', opts: ['休息一下观察半小时', '立即停止、拨打 120、通知家属并上报', '喂一片家里的药'], a: 1 },
-      { q: '患者呕吐时应该让他？', opts: ['仰卧平躺', '侧卧，头偏向一侧防呛', '坐起来喝水'], a: 1 },
-      { q: '以下哪项你绝对不能做？', opts: ['记录异常并上报', '给患者服用药物或做推拿复位', '联系家属'], a: 1 },
-    ],
-  },
-  {
-    id: 'c6', title: '服务规范与合规红线', minutes: 20,
-    points: [
-      '准时到达，进门先核对身份和预约信息，穿戴整洁、洗手后再接触患者。',
-      '不做医疗承诺：不说"包好""能治好"，不推荐药品、保健品、理疗仪器。',
-      '隐私保护：不拍摄患者面部和居家环境外传，不在社交平台发布服务照片。',
-      '边界：不与患者发生金钱借贷、代购、私下加价接单；不单独在卧室闭门服务。',
-      '服务结束要有双方确认（签到、完成、量表），这是你的服务凭证和纠纷依据。',
-    ],
-    quiz: [
-      { q: '家属问"吃这个保健品有用吗"，你应该？', opts: ['推荐几个自己知道的品牌', '说明自己不推荐任何药品保健品，建议问医生', '说吃了肯定有帮助'], a: 1 },
-      { q: '关于拍摄？', opts: ['可以拍患者训练视频发朋友圈宣传', '不拍摄患者面部和居家环境外传', '征得家属口头同意就可以发抖音'], a: 1 },
-      { q: '私下和客户约单、绕过平台收款？', opts: ['可以，双方都省钱', '严禁，属于违规', '只要平台不知道就行'], a: 1 },
-    ],
-  },
-];
+const { COURSES } = require("./src/data/courses");
 
 const PASS_PER_COURSE = 2; // 每门 3 题，答对 2 题及格
 
 /* ------------------------------------------------------ 诊断报告 */
 const REPORT_DIR = path.join(DATA_DIR, 'reports');
-const REPORT_FILE = path.join(DATA_DIR, 'reports.json');
 const REPORT_MAX = 12 * 1024 * 1024;
 const REPORT_TYPES = {
   'image/jpeg': 'jpg',
@@ -659,17 +334,10 @@ const REPORT_TYPES = {
   'application/pdf': 'pdf',
 };
 
-let reports = [];
-try {
-  fs.mkdirSync(REPORT_DIR, { recursive: true });
-  const rr = JSON.parse(fs.readFileSync(REPORT_FILE, 'utf8'));
-  reports = Array.isArray(rr) ? rr : [];
-} catch (e) { reports = []; }
+fs.mkdirSync(REPORT_DIR, { recursive: true });
+let reports = repo.loadReports();
 
-function saveReports() {
-  const tmp = REPORT_FILE + '.tmp';
-  try { fs.writeFileSync(tmp, JSON.stringify(reports)); fs.renameSync(tmp, REPORT_FILE); } catch (e) { /* ignore */ }
-}
+function saveReports() { repo.saveReports(reports); }
 
 function reportsOf(patient) {
   return reports.filter((r) => r.patient === patient).sort((a, b) => b.createdAt - a.createdAt);
@@ -684,476 +352,12 @@ function reportView(r) {
 }
 
 /* ------------------------------------------------------ 偏瘫陪练流程（SOP） */
-const SESSIONS_FILE = path.join(DATA_DIR, 'sessions.jsonl');
-
-const PHASES = ['准备', '热身', '核心训练', '放松', '记录'];
-
-// 每种阶段共用：到场检查 / 热身 / 放松 / 量表交底
-const FLOW_SHARED = {
-  safe: {
-    key: 'safe', phase: 0, title: '到场安全检查', minutes: 3,
-    goal: '确认今天可以开始，把不该开始的情况挡在门外',
-    cues: ['核对患者姓名与本次预约信息', '问清今天有没有胸痛、头晕、发烧、没吃饭、没睡好', '清地面障碍物，轮椅刹车，座椅靠墙'],
-    donts: ['不判断病情、不调药、不建议停药', '状态明显不对时不要"练一点试试"'],
-    stops: ['胸痛 / 呼吸困难 / 意识不清 → 不开始，直接 120'],
-  },
-  warm: {
-    key: 'warm', phase: 1, title: '热身与关节活动', minutes: 8,
-    goal: '让身体热起来，降低拉伤和血压骤升的风险',
-    cues: ['健侧手带动患侧上肢，缓慢来回 10 次', '肩胛骨上下左右各活动 10 次', '踝泵 20 次，配合腹式呼吸 5 次'],
-    donts: ['不暴力牵拉，不追求"咔"的响声', '出现疼痛立刻减小幅度'],
-    stops: ['疼痛 VAS ≥ 7 → 停止主动活动，改为被动'],
-  },
-  cool: {
-    key: 'cool', phase: 3, title: '放松与收尾', minutes: 5,
-    goal: '把心率降下来，固定今天的训练成果',
-    cues: ['缓慢被动活动 3 分钟', '患侧肢体垫高 10 分钟', '喝温水，问一句"现在感觉怎么样"'],
-    donts: ['不练到大汗淋漓才收', '不让患者自己走回房间'],
-    stops: [],
-  },
-  scale: {
-    key: 'scale', phase: 4, title: '填写量表与家属交底', minutes: 5,
-    goal: '留下可追踪的记录，让家属知道今天做了什么',
-    cues: ['按真实情况填疼痛、完成度、肌力、疲劳', '有异常必须写清发生时间与处理方式', '告诉家属今天练了什么、晚上注意什么'],
-    donts: ['不美化数据、不省略异常', '不做"多久能好"的承诺'],
-    stops: [],
-  },
-};
-
-// 按 Brunnstrom 分期给的核心训练步骤
-const STAGE_STEPS = {
-  '0': {
-    label: 'Brunnstrom Ⅰ–Ⅱ 期（卧床 / 联合反应期）',
-    short: 'Ⅰ–Ⅱ 期',
-    steps: [
-      {
-        key: 'pos', title: '良肢位摆放', minutes: 5,
-        goal: '防止肩痛、关节僵硬和压疮',
-        cues: ['仰卧时患侧肩下垫薄枕，上肢略外展', '患侧卧位时患侧在下，健侧腿屈曲在前', '每 2 小时换一次体位'],
-        donts: ['翻身时不拽患侧上肢', '不要把枕头垫在肘下，会加重屈曲'],
-        stops: ['皮肤发红不消退 → 记录并告知家属'],
-      },
-      {
-        key: 'rom', title: '被动关节活动', minutes: 8,
-        goal: '维持关节活动度，防止粘连',
-        cues: ['一手固定近端，一手托住远端再动', '肩、肘、腕、髋、膝、踝每个关节 8–10 次', '到有阻力就停，不追求极限'],
-        donts: ['不越过疼痛范围', '不快速抖动或甩动肢体'],
-        stops: ['关节突然剧痛或肿胀 → 停止，就医'],
-      },
-      {
-        key: 'roll', title: '翻身训练（辅助）', minutes: 6,
-        goal: '恢复床上转移能力，减少卧床并发症',
-        cues: ['双手交叉抱肩（Bobath 握手）', '屈膝、头转向、用骨盆带动身体', '向患侧翻时护住患肩'],
-        donts: ['不让患者拉患侧手臂发力', '不放手让患者独立完成'],
-        stops: ['头晕、眼前发黑 → 立即停止，平卧'],
-      },
-      {
-        key: 'sit', title: '坐位平衡（床边）', minutes: 6,
-        goal: '建立坐稳的能力，为转移做准备',
-        cues: ['双脚踩实地面，膝与髋同高', '双手先撑床面，再逐步减少扶持', '每次坐稳 30 秒，做 3 组'],
-        donts: ['不坐软沙发或床沿外侧', '不空腹久坐'],
-        stops: ['出现头晕或面色变化 → 立即躺下'],
-      },
-      {
-        key: 'breathe', title: '呼吸与排痰', minutes: 3,
-        goal: '改善通气，预防肺部感染',
-        cues: ['鼻吸口呼，慢吸慢呼 5 次', '深吸气后轻咳两声', '拍背由下往上、由外向内'],
-        donts: ['不重叩脊柱和肾区', '饭后 1 小时内不排痰'],
-        stops: ['咳血、胸痛 → 停止并就医'],
-      },
-    ],
-  },
-  '1': {
-    label: 'Brunnstrom Ⅲ 期（共同运动期）',
-    short: 'Ⅲ 期',
-    steps: [
-      {
-        key: 'sitstand', title: '坐-站转移（辅助）', minutes: 8,
-        goal: '把"站起来"这件事做对，而不是靠拽',
-        cues: ['双脚后收，身体前倾，鼻子过膝盖', '患侧膝顶住健侧膝，防止膝内扣', '站起来站稳 3 秒再坐下'],
-        donts: ['不拉扶手硬拽起来', '不许膝盖向内扣着站'],
-        stops: ['站起时头晕 → 立即坐下'],
-      },
-      {
-        key: 'support', title: '患侧上肢支撑负重', minutes: 6,
-        goal: '给患侧肩肘建立承重能力',
-        cues: ['手掌张开撑桌面，肘微屈', '从 10 秒开始，逐次延长到 30 秒', '肩膀不要耸起来'],
-        donts: ['不让肘关节过伸锁死', '不撑在软垫或不稳的桌面上'],
-        stops: ['肩部疼痛 → 停止支撑，改被动活动'],
-      },
-      {
-        key: 'inhibit', title: '共同运动抑制（慢速）', minutes: 6,
-        goal: '学会只动一个关节，而不是整条胳膊一起使劲',
-        cues: ['动作放慢到 3 秒一次', '只做目标关节，其他部位保持放松', '一出现代偿动作立即停下重来'],
-        donts: ['不追求幅度和次数', '不在疲劳状态下练这个'],
-        stops: ['越练越僵、代偿更多 → 减量'],
-      },
-      {
-        key: 'shift', title: '坐位重心转移', minutes: 6,
-        goal: '把重心敢放到患侧，是走路的前提',
-        cues: ['左右各 10 次，回中间停 3 秒', '患侧多给一点重量', '家属站在患侧保护'],
-        donts: ['不突然推患者', '不让患者坐在床边缘'],
-        stops: ['心慌、出汗 → 停止休息'],
-      },
-      {
-        key: 'standsit', title: '辅助下站立平衡', minutes: 5,
-        goal: '建立站立稳定性',
-        cues: ['双手扶持，双脚与肩同宽', '站稳 30 秒，逐步减到单手扶', '眼睛看前方一个固定点'],
-        donts: ['不独自站立', '不穿拖鞋练'],
-        stops: ['摇晃明显 → 退回坐位'],
-      },
-    ],
-  },
-  '2': {
-    label: 'Brunnstrom Ⅳ–Ⅴ 期（分离运动期）',
-    short: 'Ⅳ–Ⅴ 期',
-    steps: [
-      {
-        key: 'reach', title: '分离运动：够物 / 手碰嘴', minutes: 8,
-        goal: '把上肢从"整条一起动"拆成单关节控制',
-        cues: ['肩不抬、肘带动，慢慢伸向目标', '目标放在患侧斜前方', '每次 10 遍，中间休息'],
-        donts: ['不用健手帮忙推', '不耸肩代偿'],
-        stops: ['肩前部疼痛 → 降低高度'],
-      },
-      {
-        key: 'singleleg', title: '单腿负重与重心转移', minutes: 8,
-        goal: '让患腿真正承重，减少走路画圈',
-        cues: ['患腿承重，健腿迈半步', '手扶固定物，身体直立', '每次 20 秒，做 3 组'],
-        donts: ['不锁死膝关节', '不在湿滑地面练'],
-        stops: ['膝痛或打软腿 → 停止'],
-      },
-      {
-        key: 'step', title: '原地踏步与迈步分解', minutes: 8,
-        goal: '建立正确的迈步顺序',
-        cues: ['先抬患腿，再迈健腿', '口令"慢—稳—停"', '一步一停，不连续走'],
-        donts: ['不追求速度和距离', '不在疲劳时练步态'],
-        stops: ['拖步明显加重 → 休息后再来'],
-      },
-      {
-        key: 'stairs', title: '上下台阶（扶扶手）', minutes: 6,
-        goal: '练真实的上下楼能力',
-        cues: ['上台阶健腿先，下台阶患腿先', '一级一停，全程扶扶手', '有人在侧后方保护'],
-        donts: ['不两级并一步', '不背手上下'],
-        stops: ['心慌、腿抖 → 立即停止'],
-      },
-      {
-        key: 'adl', title: '日常生活任务模拟', minutes: 6,
-        goal: '把训练变成能用的动作',
-        cues: ['穿衣先穿患侧，脱衣先脱健侧', '进食坐正，患手放桌面上', '允许慢，不催'],
-        donts: ['不替他全部做完', '不因为慢就上手代劳'],
-        stops: ['情绪明显低落 → 停止，先安抚'],
-      },
-    ],
-  },
-  '3': {
-    label: 'Brunnstrom Ⅵ 期（接近正常期）',
-    short: 'Ⅵ 期',
-    steps: [
-      {
-        key: 'hand', title: '精细手功能训练', minutes: 8,
-        goal: '恢复抓握、捏取等日常手部能力',
-        cues: ['捡豆子、拧瓶盖、捏橡皮，患手为主', '健手只做辅助，不代劳', '每次换一个任务，避免枯燥'],
-        donts: ['不长时间持续抓握', '不练到手指僵硬发抖'],
-        stops: ['手指肿胀、发紫 → 停止并抬高'],
-      },
-      {
-        key: 'walk', title: '步行耐力与速度控制', minutes: 10,
-        goal: '把走路从"能走"变成"走得稳、走得远"',
-        cues: ['室内往返 3 趟，每趟休息 1 分钟', '步幅均匀，不快不慢', '以"能说话不喘"为强度上限'],
-        donts: ['不走腿发软才停', '无人看护时不练'],
-        stops: ['胸闷、头晕 → 立即停止坐下'],
-      },
-      {
-        key: 'balance', title: '平衡干扰训练', minutes: 6,
-        goal: '应对真实环境里的意外干扰',
-        cues: ['轻推肩部、转身取物、闭眼站立', '始终靠墙或有人保护', '每次 30 秒'],
-        donts: ['不突然大力推', '不在软垫或床上练'],
-        stops: ['差点跌倒 → 立即降级'],
-      },
-      {
-        key: 'community', title: '社区场景模拟', minutes: 6,
-        goal: '把训练带到真实环境',
-        cues: ['过门槛、走斜坡、按电梯按钮', '先看路再走，不边走边说话', '全程有人陪同'],
-        donts: ['不独自过马路', '不练自动扶梯'],
-        stops: ['环境嘈杂导致紧张 → 回到室内'],
-      },
-      {
-        key: 'chore', title: '家务任务分解', minutes: 5,
-        goal: '恢复参与家庭事务的能力和信心',
-        cues: ['擦桌、叠衣、摆碗筷，分 3 段做', '每段之间休息 2 分钟', '做完一起检查，给正反馈'],
-        donts: ['不搬重物、不登高', '不因为做不好就批评'],
-        stops: ['腰背痛 → 停止，调整姿势'],
-      },
-    ],
-  },
-  'o': {
-    label: '骨科术后流程（关节 / 骨折 / 腰颈）',
-    short: '骨科术后',
-    warm: {
-      key: 'oWarm', phase: 1, title: '肌肉激活与关节活动', minutes: 6,
-      goal: '让关节和肌肉先苏醒，避免一上来就负重',
-      cues: ['绷紧大腿/臀部肌肉 5 秒再放松，做 10 次', '健侧带动患侧，缓慢活动', '任何动作以"疼痛不加重"为界'],
-      donts: ['不在肿胀部位做热敷', '不做突然发力、扭转的动作'],
-      stops: ['疼痛 VAS ≥ 7 → 停止，改冰敷抬高'],
-    },
-    pre: [
-      {
-        key: 'oCheck', phase: 0, title: '今天能不能练（医嘱与伤口）', minutes: 3,
-        goal: '确认负重限制和伤口情况，别把康复练成二次损伤',
-        cues: ['确认医生说的负重程度：完全 / 部分 / 禁止', '看伤口有没有渗液、红肿、发热', '问夜间痛和肿胀比昨天是轻了还是重了'],
-        donts: ['不越过医嘱的负重和角度限制', '有发热或伤口渗液今天就不练'],
-        stops: ['伤口渗液增多、发热 → 停止并联系医生'],
-      },
-    ],
-    steps: [
-      {
-        key: 'oSwelling', title: '消肿与循环', minutes: 12,
-        goal: '把肿消下去，肿胀不消关节就练不动',
-        cues: ['患肢抬高，高过心脏', '踝泵 20 次，做 3 组', '急性肿胀可冰敷 15 分钟（隔布）'],
-        donts: ['不热敷急性肿胀部位', '不揉捏小腿肚（防血栓脱落）'],
-        stops: ['小腿突然肿胀、发热疼痛 → 立即就医排查血栓'],
-      },
-      {
-        key: 'oRom', title: '关节活动度', minutes: 15,
-        goal: '在安全范围内把角度一点点找回来',
-        cues: ['无痛范围内主动活动 + 手辅助', '每个方向 10 次，慢到能控制', '用毛巾、助行器做辅助，不硬掰'],
-        donts: ['不暴力掰腿掰肩', '不越医嘱角度（髋屈不超 90°、不内旋）'],
-        stops: ['卡住并有锐痛 → 停在痛点之前，不硬顶'],
-      },
-      {
-        key: 'oLoad', title: '负重与力量', minutes: 10,
-        goal: '按医嘱恢复承重，走稳比走远重要',
-        cues: ['按医嘱部分或完全负重，用助行器/拐杖', '先站稳再迈步，步幅小、节奏慢', '坐站 5 次 × 2 组，膝盖不内扣'],
-        donts: ['不单腿跳、不提重物、不爬楼梯练'],
-        stops: ['关节突然打软 → 坐下休息，改天再练'],
-      },
-    ],
-    cool: {
-      key: 'oCool', phase: 3, title: '冰敷抬高与复查肿胀', minutes: 6,
-      goal: '把今天的反应压下去，为明天留余地',
-      cues: ['抬高患肢 15 分钟', '记录肿胀围度和疼痛分', '告诉家属今天做了什么、晚上注意什么'],
-      donts: ['不马上泡热水澡', '不当天加练第二遍'],
-      stops: ['肿胀明显加重 → 明天减量并联系医生'],
-    },
-  },
-  'c': {
-    label: '心肺流程（心脏 / 呼吸）',
-    short: '心肺',
-    warm: {
-      key: 'cWarm', phase: 1, title: '慢走与呼吸热身', minutes: 5,
-      goal: '让心率平缓上来，避免一开始就喘',
-      cues: ['原地或室内慢走 3 分钟', '缩唇呼吸 10 次（吸 2 秒、呼 4 秒）', '测一次静息心率与血氧并记下'],
-      donts: ['不做突然用力的动作', '不做憋气发力的动作'],
-      stops: ['静息血氧 < 90% → 今天不练，联系家属'],
-    },
-    pre: [
-      {
-        key: 'cCheck', phase: 0, title: '今天能不能练（测三项）', minutes: 4,
-        goal: '心率和血压决定今天练不练、练多少',
-        cues: ['测静息心率、血压、血氧各一次', '问有没有胸闷、夜里憋醒、腿肿', '确认今天按时吃了降压/利尿药'],
-        donts: ['血压 ≥180/110 或 ≤90/60 今天不练', '饭后 1 小时内不练'],
-        stops: ['胸痛、明显气促 → 立即停止并拨打 120'],
-      },
-    ],
-    steps: [
-      {
-        key: 'cBreath', title: '呼吸训练', minutes: 10,
-        goal: '学会把气呼干净，减少憋气和喘',
-        cues: ['缩唇呼吸 10 次，呼气要慢要长', '腹式呼吸：手放肚子上感受起伏', '有痰时身体前倾、轻咳两声'],
-        donts: ['不用力憋气', '不深吸到头晕眼花'],
-        stops: ['头晕、眼前发黑 → 恢复自然呼吸，坐稳'],
-      },
-      {
-        key: 'cWalk', title: '间歇步行', minutes: 12,
-        goal: '在有氧区间里走，而不是走到喘不上气',
-        cues: ['走 3 分钟、歇 1 分钟，做 3–5 组', '强度以"能说话不喘"为准', '全程有人陪，随身带水'],
-        donts: ['不冲刺、不爬坡、不追赶时间'],
-        stops: ['血氧 < 88%、心率超医嘱上限、胸闷 → 立即停'],
-      },
-      {
-        key: 'cStrength', title: '低强度力量', minutes: 8,
-        goal: '保住肌肉，不让体力继续往下掉',
-        cues: ['坐站 5 次 × 2 组，起身时呼气', '弹力带划船 8 次，动作慢', '组间休息 1 分钟'],
-        donts: ['不用力时憋气（瓦尔萨尔瓦动作）', '不做举过头顶的动作'],
-        stops: ['头晕、心慌、脸色变白 → 立即停'],
-      },
-    ],
-    cool: {
-      key: 'cCool', phase: 3, title: '减速与恢复', minutes: 6,
-      goal: '让心率平稳落回来，记录今天的强度',
-      cues: ['慢走 2 分钟逐步降速', '呼吸恢复到能正常说话', '记下心率、血氧和疲劳分（Borg）'],
-      donts: ['不练完立刻坐下不动', '不当场加量'],
-      stops: ['休息 5 分钟心率仍明显偏高 → 记录并告知家属'],
-    },
-  },
-  'n': {
-    label: '神经流程（帕金森 / 脊髓损伤 / 周围神经）',
-    short: '神经',
-    warm: {
-      key: 'nWarm', phase: 1, title: '牵伸与关节活动', minutes: 8,
-      goal: '先把痉挛和僵硬降下来，再谈动作',
-      cues: ['痉挛肌群缓慢牵伸，每个 30 秒', '各关节全范围活动 10 次', '起身前先坐 30 秒，观察有没有头晕'],
-      donts: ['不暴力牵拉痉挛肢体', '不长时间站立后突然起身'],
-      stops: ['头晕、血压下降 → 平卧抬腿'],
-    },
-    pre: [
-      {
-        key: 'nCheck', phase: 0, title: '今天能不能练（皮肤与体位）', minutes: 3,
-        goal: '压疮和体位性低血压是这类患者最常见的坑',
-        cues: ['检查骶尾、足跟、坐骨结节皮肤', '问有没有起身头晕、痉挛加重、便秘', '检查轮椅刹车、助行器是否完好'],
-        donts: ['皮肤发红不消退的地方今天不再受压', '不空腹训练'],
-        stops: ['皮肤破溃、发热 → 停止并告知家属'],
-      },
-    ],
-    steps: [
-      {
-        key: 'nTransfer', title: '转移与体位', minutes: 12,
-        goal: '把床、椅、轮椅之间的移动做安全',
-        cues: ['床到椅：先坐起停 30 秒再站', '轮椅转移：锁刹车、收脚踏、靠近床边', '每 30 分钟换一次体位减压'],
-        donts: ['不拽衣服、不拉手臂起身', '不让患者独自完成第一次转移'],
-        stops: ['头晕或腿打软 → 坐回床上'],
-      },
-      {
-        key: 'nBalance', title: '平衡与步态', minutes: 12,
-        goal: '减少跌倒，把走路节奏找回来',
-        cues: ['帕金森：起步先脚跟踩实，口令"抬—迈"', '转身分两步走，不原地硬转', '脊髓损伤：坐位双手撑、前后左右够物'],
-        donts: ['不催促走快', '不在湿滑地面练转身'],
-        stops: ['差点跌倒 → 降级为扶持下练习'],
-      },
-      {
-        key: 'nTask', title: '日常任务练习', minutes: 10,
-        goal: '让训练变成能自己完成的事',
-        cues: ['穿衣先穿患侧、脱衣先脱健侧', '进食坐正，手放桌面上', '手功能：捏豆子、拧瓶盖，患手为主'],
-        donts: ['不全部代劳', '不因为慢就批评'],
-        stops: ['情绪崩溃 → 停止并安抚'],
-      },
-    ],
-    cool: {
-      key: 'nCool', phase: 3, title: '放松与体位摆放', minutes: 6,
-      goal: '把痉挛降下来，减少今晚的不适',
-      cues: ['缓慢牵伸 3 分钟', '受压部位垫枕、患侧支撑', '喝温水，问一句感受'],
-      donts: ['不让患者自己走回房间'],
-      stops: ['痉挛明显加重 → 记录并调整下次强度'],
-    },
-  },
-  'g': {
-    label: '通用流程（非偏瘫病种）',
-    short: '通用',
-    steps: [
-      {
-        key: 'todayTask', title: '定今天要解决的一件事', minutes: 5,
-        goal: '把"想解决的问题"缩成今天做得完的一件小事',
-        cues: ['从患者的主诉里挑一件最影响生活的事', '跟患者确认：今天就练这一个', '把目标写下来，越小越好'],
-        donts: ['一次不要同时改几个问题', '不做"多久能好"的承诺'],
-        stops: ['患者明确抗拒 → 换更小的目标，别硬推'],
-      },
-      {
-        key: 'taskStep', title: '任务拆解练习', minutes: 12,
-        goal: '把大目标拆成小步骤，一步一步过',
-        cues: ['拆成 3 个小步骤，每步做 3–5 次', '每完成一步给一句明确的反馈', '做不到就把步骤再拆细'],
-        donts: ['不练到力竭', '不用"再试一次"硬顶'],
-        stops: ['疼痛 VAS ≥ 7 或头晕 → 立即停止'],
-      },
-      {
-        key: 'carry', title: '搬进真实场景', minutes: 8,
-        goal: '让今天练的动作在生活里真的用得上',
-        cues: ['放进真实场景做：穿衣、起身、倒水、上台阶', '让患者自己完成，监督者只在旁边保护', '记下卡在哪一步，下次从这里开始'],
-        donts: ['不全部代劳', '不催促、不批评'],
-        stops: ['情绪明显崩溃 → 停止，先安抚'],
-      },
-    ],
-  },
-
-};
-
-// 异常处理指引（现场照着做）
-const INCIDENTS = [
-  {
-    type: 'chest', title: '胸痛 / 胸闷 / 大汗', severity: 'high', label: '立即 120',
-    dos: ['立刻停止训练，让患者半坐位', '松开衣领和腰带，保持安静', '拨打 120，记录症状开始的准确时间', '有家属在场就让他陪着，不要离开'],
-    donts: ['不要喂硝酸甘油、阿司匹林或任何药', '不要让患者自己走去门口等车'],
-    note: '这类情况可能是心脏问题，现场唯一正确动作是停下并叫急救。',
-  },
-  {
-    type: 'stroke', title: '新出现的口齿不清 / 一侧无力 / 脸歪', severity: 'high', label: '立即 120',
-    dos: ['立刻停止训练', '记下症状第一次出现的时间（溶栓时间窗靠这个）', '让患者侧卧，防止呕吐误吸', '拨打 120，说明"疑似再发卒中"'],
-    donts: ['不要喂水喂饭', '不要掐人中、不要按摩肢体', '不要等"看看会不会自己好"'],
-    note: '已经得过卒中的患者再次出现神经症状，时间就是大脑。',
-  },
-  {
-    type: 'dizzy', title: '头晕 / 天旋地转', severity: 'mid', label: '休息后就医',
-    dos: ['立即停止，坐下或平卧', '抬高下肢 20–30 厘米', '有血压计就测一次并记录', '休息 5 分钟后再评估'],
-    donts: ['不要继续练站立和步行', '不要让患者自己走回房间'],
-    note: '5 分钟不缓解，或伴言语不清、走路不稳，按卒中处理直接 120。',
-  },
-  {
-    type: 'pain', title: '疼痛明显加重（VAS ≥ 7 或比上次涨 3 分）', severity: 'mid', label: '降级训练',
-    dos: ['停止当前动作', '问清疼痛位置、性质（刺痛 / 胀痛 / 撕裂感）', '换更低强度或改被动活动', '如实记进量表并告知家属'],
-    donts: ['不要让患者"忍一忍"', '急性期不要热敷或用力按揉'],
-    note: '持续不缓解、局部肿胀或畸形，转就医排查。',
-  },
-  {
-    type: 'fall', title: '跌倒', severity: 'high', label: '评估后再动',
-    dos: ['先别急着扶起来', '检查意识、疼痛部位、四肢能不能动', '怀疑骨折就固定原地不动', '拨打 120 或联系家属送医'],
-    donts: ['不要抱起、不要摇晃', '不要让患者"试试能不能站"'],
-    note: '头部着地即使当时清醒也要就医观察，警惕迟发颅内出血。',
-  },
-  {
-    type: 'emotion', title: '情绪崩溃 / 哭泣 / 拒绝训练', severity: 'mid', label: '陪伴优先',
-    dos: ['停止训练，坐下来陪着', '让他把话说完，不打断', '带做 5 次深呼吸，等情绪平复', '记录并提醒家属关注情绪状态'],
-    donts: ['不要说"想开点""别人更惨"', '不要用训练进度施压'],
-    note: '情绪持续低落两周以上，建议家属带去做专业评估（PHQ-9 可先自查）。',
-  },
-  {
-    type: 'seizure', title: '抽搐 / 意识丧失', severity: 'high', label: '立即 120',
-    dos: ['让患者侧卧', '清空周围硬物，垫软物护头', '记录抽搐持续时间', '拨打 120'],
-    donts: ['不要按压肢体、不要强行掰开', '不要往嘴里塞任何东西'],
-    note: '超过 5 分钟不停，或短时间内反复发作，属于急症。',
-  },
-  {
-    type: 'shoulder', title: '肩痛 / 肩关节半脱位', severity: 'mid', label: '停止牵拉',
-    dos: ['停止上举和牵拉动作', '用枕头支撑患侧上肢', '避免拉吊环、拽手臂', '建议就医评估'],
-    donts: ['不要强行上举', '不要旋转拉扯肩关节'],
-    note: '偏瘫肩很常见，处理原则是"支撑、不拉扯"，硬练会变成慢性疼痛。',
-  },
-  {
-    type: 'bp', title: '血压异常（≥180/110 或 ≤90/60）', severity: 'high', label: '复测后就医',
-    dos: ['停止训练，静坐 5 分钟', '复测一次并记录数值', '联系家属说明情况'],
-    donts: ['不要自行加服降压药', '不要继续训练"看看会不会降"'],
-    note: '复测仍异常，或伴头痛、胸闷、视物模糊，立即就医。',
-  },
-];
+const { PHASES, FLOW_SHARED, STAGE_STEPS, INCIDENTS, flowSteps } = require('./src/data/flows');
 
 let flows = [];
-try { const pf = JSON.parse(fs.readFileSync(path.join(DATA_DIR, 'sessions.json'), 'utf8')); flows = Array.isArray(pf) ? pf : []; } catch (e) { flows = []; }
-let sessionSeq = flows.length;
+let sessionSeq = 0;
 
-/* ------------------------------------------------------ 快照持久化 */
-const BOOK_SNAP = path.join(DATA_DIR, 'bookings.json');
-const SCALE_SNAP = path.join(DATA_DIR, 'scales.json');
-const ALERT_SNAP = path.join(DATA_DIR, 'alerts.json');
-const ASSESS_SNAP = path.join(DATA_DIR, 'assessments.json');
-
-function readJsonlSafe(file) {
-  try {
-    return fs.readFileSync(file, 'utf8').split('\n').filter(Boolean)
-      .map((l) => { try { return JSON.parse(l); } catch (e) { return null; } })
-      .filter(Boolean);
-  } catch (e) { return []; }
-}
-function readSnapSafe(file) {
-  try {
-    const x = JSON.parse(fs.readFileSync(file, 'utf8'));
-    return Array.isArray(x) ? x : null;
-  } catch (e) { return null; }
-}
-function writeSnap(file, data) {
-  try {
-    const tmp = file + '.tmp';
-    fs.writeFileSync(tmp, JSON.stringify(data));
-    fs.renameSync(tmp, file);
-  } catch (e) { /* 忽略：下次再写 */ }
-}
+/* ------------------------------------------------------ 持久化（SQLite） */
 function maxSeq(list, prefix) {
   return list.reduce((m, x) => {
     const n = parseInt(String((x && x.id) || '').slice(prefix.length), 10);
@@ -1162,13 +366,11 @@ function maxSeq(list, prefix) {
 }
 
 function loadSnapshots() {
-  // 预约：优先快照；没有快照时用 jsonl 的 create 事件兜底
-  bookings = readSnapSafe(BOOK_SNAP) || readJsonlSafe(BOOK_FILE)
-    .filter((x) => x && x.event === 'create' && x.b && x.b.id)
-    .map((x) => x.b);
-  scales = readSnapSafe(SCALE_SNAP) || readJsonlSafe(SCALE_FILE).filter((x) => x && x.id);
-  alerts = readSnapSafe(ALERT_SNAP) || readJsonlSafe(ALERT_FILE).filter((x) => x && x.id);
-  assessments = readSnapSafe(ASSESS_SNAP) || readJsonlSafe(ASSESS_FILE).filter((x) => x && x.id);
+  bookings = repo.loadBookings(400);
+  scales = repo.loadScales(500);
+  alerts = repo.loadAlerts(1000);
+  assessments = repo.loadAssessments(500);
+  flows = repo.loadFlows(800);
   bookSeq = maxSeq(bookings, 'B');
   scaleSeq = maxSeq(scales, 'S');
   alertSeq = maxSeq(alerts, 'N');
@@ -1176,44 +378,11 @@ function loadSnapshots() {
   sessionSeq = maxSeq(flows, 'F');
 }
 
-function persistAll() {
-  writeSnap(BOOK_SNAP, bookings.slice(-400));
-  writeSnap(SCALE_SNAP, scales.slice(-500));
-  writeSnap(ALERT_SNAP, alerts.slice(-1000));
-  writeSnap(ASSESS_SNAP, assessments.slice(-500));
-  writeSnap(path.join(DATA_DIR, 'sessions.json'), flows.slice(-800));
-}
+function persistAll() { repo.saveAll({ bookings, scales, alerts, assessments, flows }); }
 
 
-function saveFlows() {
-  const tmp = path.join(DATA_DIR, 'sessions.json') + '.tmp';
-  fs.writeFileSync(tmp, JSON.stringify(flows, null, 2));
-  fs.renameSync(tmp, path.join(DATA_DIR, 'sessions.json'));
-}
+function saveFlows() { repo.saveFlows(flows); }
 
-function flowSteps(stage) {
-  const st = STAGE_STEPS[String(stage)];
-  if (!st) return null;
-  const order = [
-    FLOW_SHARED.safe,
-    ...(st.pre || []),
-    st.warm || FLOW_SHARED.warm,
-    ...st.steps,
-    st.cool || FLOW_SHARED.cool,
-    FLOW_SHARED.scale,
-  ];
-  const last = order.length - 1;
-  return order.map((s, i) => {
-    // 阶段按位置推导：首=准备，次=热身，末=记录，倒数第二=放松，其余=核心
-    const derived = (i === 0) ? 0 : (i === 1) ? 1 : (i === last) ? 4 : (i === last - 1) ? 3 : 2;
-    const phase = (s.phase != null) ? s.phase : derived;
-    return {
-      key: s.key, phase, phaseLabel: PHASES[phase],
-      title: s.title, goal: s.goal, minutes: s.minutes,
-      cues: s.cues || [], donts: s.donts || [], stops: s.stops || [],
-    };
-  });
-}
 
 function sessionView(s) {
   const steps = flowSteps(s.stage) || [];
@@ -1230,8 +399,6 @@ function sessionView(s) {
 
 /* ------------------------------------------------------ 课程视频 */
 const VIDEO_DIR = path.join(DATA_DIR, 'videos');
-const VIDEO_FILE = path.join(DATA_DIR, 'videos.json');
-const WATCH_FILE = path.join(DATA_DIR, 'watch.json');
 const VIDEO_MAX = 300 * 1024 * 1024; // 单文件 300MB
 const VIDEO_TYPES = {
   'video/mp4': '.mp4',
@@ -1245,24 +412,14 @@ const WATCH_DONE_TAIL = 8;
 
 fs.mkdirSync(VIDEO_DIR, { recursive: true });
 
-let videos = [];
-try { videos = JSON.parse(fs.readFileSync(VIDEO_FILE, 'utf8')) || []; } catch (e) { videos = []; }
+let videos = repo.loadVideos();
 
 // 观看进度：{ 用户名: { 视频id: {pos, dur, done, at} } }
-let watchState = {};
-try { watchState = JSON.parse(fs.readFileSync(WATCH_FILE, 'utf8')) || {}; } catch (e) { watchState = {}; }
+let watchState = repo.loadWatch();
 
-function saveVideos() {
-  const tmp = VIDEO_FILE + '.tmp';
-  fs.writeFileSync(tmp, JSON.stringify(videos, null, 2));
-  fs.renameSync(tmp, VIDEO_FILE);
-}
+function saveVideos() { repo.saveVideos(videos); }
 
-function saveWatch() {
-  const tmp = WATCH_FILE + '.tmp';
-  fs.writeFileSync(tmp, JSON.stringify(watchState, null, 2));
-  fs.renameSync(tmp, WATCH_FILE);
-}
+function saveWatch() { repo.saveWatch(watchState); }
 
 function watchOf(name, videoId) {
   return (watchState[name] && watchState[name][videoId]) || null;
@@ -1409,13 +566,12 @@ function issueInvite(patientName) {
   return u.invite;
 }
 
+/**
+ * 患者数据可见性统一走 src/middleware/access.js。
+ * 原实现里 supervisor 直接 return true（任意监督者可读任意患者），已经修掉。
+ */
 function canViewPatient(viewer, patient) {
-  if (!users[viewer] || !users[patient]) return false;
-  if (viewer === patient) return true;
-  const u = users[viewer];
-  if (u.role === 'supervisor') return true;
-  if (u.role === 'family') return u.linkedPatient === patient;
-  return false;
+  return access.canViewPatient(viewer, patient, users);
 }
 
 /* ---------------------------------------------------------------- 会话 */
@@ -1427,14 +583,6 @@ function createSession(name) {
   return token;
 }
 
-function parseCookies(h) {
-  const out = {};
-  (h || '').split(';').forEach((p) => {
-    const i = p.indexOf('=');
-    if (i > 0) out[p.slice(0, i).trim()] = decodeURIComponent(p.slice(i + 1).trim());
-  });
-  return out;
-}
 
 function sessionName(req) {
   const c = parseCookies(req.headers.cookie);
@@ -1450,32 +598,6 @@ function cookieHeader(t) {
 }
 
 /* ---------------------------------------------------------------- 工具 */
-function json(res, code, obj, headers = {}) {
-  const body = JSON.stringify(obj);
-  res.writeHead(code, {
-    'Content-Type': 'application/json; charset=utf-8',
-    'Content-Length': Buffer.byteLength(body),
-    'Cache-Control': 'no-store',
-    ...headers,
-  });
-  res.end(body);
-}
-
-function readJson(req) {
-  return new Promise((resolve, reject) => {
-    let size = 0; const chunks = [];
-    req.on('data', (c) => {
-      size += c.length;
-      if (size > MAX_BODY) { reject(new Error('payload too large')); req.destroy(); return; }
-      chunks.push(c);
-    });
-    req.on('end', () => {
-      try { resolve(JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}')); }
-      catch (e) { reject(new Error('invalid json')); }
-    });
-    req.on('error', reject);
-  });
-}
 
 /* ---------------------------------------------------------------- HTTP */
 const server = http.createServer(async (req, res) => {
@@ -1484,6 +606,14 @@ const server = http.createServer(async (req, res) => {
   if (p.startsWith(BASE)) p = p.slice(BASE.length) || '/';
 
   try {
+    // 统一鉴权入口：/api/ 下未登记路径 404，未登录 401，角色不符 403
+    // 细粒度的资源归属（这条预约是不是你的、这个患者你能不能看）仍在各 handler 内判断
+    const currentUser = sessionName(req);
+    const gate = routeTable.check({
+      method: req.method, path: p, user: currentUser, role: access.roleOf(currentUser, users),
+    });
+    if (gate) return json(res, gate.code, { ok: false, err: gate.err });
+
     if (p === '/' || p === '/index.html') {
       return fs.readFile(path.join(PUBLIC_DIR, 'index.html'), (err, data) => {
         if (err) { res.writeHead(500); return res.end('missing page'); }
@@ -2042,12 +1172,24 @@ const server = http.createServer(async (req, res) => {
       const body = await readJson(req);
       const patient = String(body.patient || '').trim();
       if (!users[patient] || users[patient].role !== 'patient') return json(res, 400, { ok: false, err: '患者不存在' });
+      // 必须与该患者存在服务关系（有预约或历史流程），不能给任意患者开流程
+      if (!canViewPatient(name, patient)) return json(res, 403, { ok: false, err: '该患者不在你的服务范围内' });
+      // 正式环境要求"认证 + 培训合格"；测试模式放行，方便演示
+      if (!TEST_MODE && !isQualified(name)) return json(res, 403, { ok: false, err: '请先完成认证与培训', needCert: true });
+      const bookingId = String(body.bookingId || '').trim();
+      if (bookingId) {
+        const b = bookings.find((x) => x.id === bookingId);
+        if (!b || b.supervisor !== name || b.patient !== patient) {
+          return json(res, 400, { ok: false, err: '预约与本次陪练不匹配' });
+        }
+        if (b.status !== 'checked_in') return json(res, 400, { ok: false, err: '请先到场签到再开始陪练' });
+      }
       const stage = String(body.stage || '');
       const steps = flowSteps(stage);
-      if (!steps) return json(res, 400, { ok: false, err: '请选择 Brunnstrom 分期' });
+      if (!steps) return json(res, 400, { ok: false, err: '请选择训练分期' });
       const s = {
         id: 'F' + String(++sessionSeq).padStart(4, '0'),
-        patient, supervisor: name, stage,
+        patient, supervisor: name, stage, bookingId: bookingId || null,
         status: 'running', startedAt: Date.now(), endedAt: null,
         steps: steps.map((st) => ({ key: st.key, doneAt: null, skipped: false, reason: '' })),
         incidents: [], scaleId: null,
@@ -2179,6 +1321,9 @@ const server = http.createServer(async (req, res) => {
       const body = await readJson(req);
       const patient = String(body.patient || '').trim();
       if (!users[patient] || users[patient].role !== 'patient') return json(res, 400, { ok: false, err: '患者不存在' });
+      // 量表属于评估记录，必须与该患者有服务关系；正式环境还要求认证与培训合格
+      if (!canViewPatient(name, patient)) return json(res, 403, { ok: false, err: '该患者不在你的服务范围内' });
+      if (!TEST_MODE && !isQualified(name)) return json(res, 403, { ok: false, err: '请先完成认证与培训', needCert: true });
       const s = buildScale(name, patient, body.scale || {}, null);
       broadcastAll();
       return json(res, 200, { ok: true, scale: s });
@@ -2692,6 +1837,9 @@ const ticker = setInterval(() => {
   }
 }, 30 * 1000);
 
+// 允许作为模块被测试引用时进程能正常退出（不影响线上心跳）
+ticker.unref();
+
 setInterval(() => {
   const now = Date.now();
   for (const [t, s] of sessions) if (s.exp < now) sessions.delete(t);
@@ -2699,9 +1847,18 @@ setInterval(() => {
 
 loadSnapshots();
 
-server.listen(PORT, HOST, () => {
-  console.log(`[rehab] v2 listening http://${HOST}:${PORT}${BASE}/ users=${Object.keys(users).length} bookings=${bookings.length} scales=${scales.length}`);
-});
+module.exports = {
+  start, canViewPatient, createBooking, confirmBooking, checkinBooking, completeBooking,
+  buildScale, flowSteps, sessionView, users, sessions, routes: routeTable, access,
+};
+
+function start() {
+  server.listen(PORT, HOST, () => {
+    console.log(`[rehab] listening http://${HOST}:${PORT}${BASE}/ users=${Object.keys(users).length} bookings=${bookings.length} scales=${scales.length}`);
+  });
+}
+
+if (require.main === module) start();
 
 for (const sig of ['SIGINT', 'SIGTERM']) {
   process.on(sig, () => {
