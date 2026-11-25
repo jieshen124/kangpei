@@ -1,0 +1,19 @@
+{
+  "name": "rehab",
+  "version": "0.10.0",
+  "private": true,
+  "description": "康陪居家康复监督平台服务端",
+  "main": "server.js",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "check": "node --check server.js",
+    "test": "node --test test/framework.test.js"
+  },
+  "dependencies": {
+    "node-sqlite3-wasm": "^0.8.61",
+    "ws": "^8.23.0"
+  }
+}
